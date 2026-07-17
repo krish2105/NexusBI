@@ -1,0 +1,63 @@
+check_id,category,table_or_area,check_description,expected,actual,status,severity,notes
+ROW-01,row preservation,core/customers.csv,Output row count equals the corresponding source table.,99441,99441,PASS,CRITICAL,
+ROW-02,row preservation,supplementary/geolocation.csv,Output row count equals the corresponding source table.,1000163,1000163,PASS,CRITICAL,
+ROW-03,row preservation,core/orders.csv,Output row count equals the corresponding source table.,99441,99441,PASS,CRITICAL,
+ROW-04,row preservation,core/order_items.csv,Output row count equals the corresponding source table.,112650,112650,PASS,CRITICAL,
+ROW-05,row preservation,supplementary/payments.csv,Output row count equals the corresponding source table.,103886,103886,PASS,CRITICAL,
+ROW-06,row preservation,supplementary/reviews.csv,Output row count equals the corresponding source table.,99224,99224,PASS,CRITICAL,
+ROW-07,row preservation,core/products.csv,Output row count equals the corresponding source table.,32951,32951,PASS,CRITICAL,
+ROW-08,row preservation,core/sellers.csv,Output row count equals the corresponding source table.,3095,3095,PASS,CRITICAL,
+PK-01,uniqueness,customers,customer_id is unique.,99441,99441,PASS,CRITICAL,
+PK-02,uniqueness,orders,order_id is unique.,99441,99441,PASS,CRITICAL,
+PK-03,uniqueness,products,product_id is unique.,32951,32951,PASS,CRITICAL,
+PK-04,uniqueness,sellers,seller_id is unique.,3095,3095,PASS,CRITICAL,
+PK-05,uniqueness,regions,region_id is unique.,27,27,PASS,CRITICAL,
+PK-06,uniqueness,geolocation,geolocation_row_id is unique.,1000163,1000163,PASS,CRITICAL,
+PK-07,uniqueness,geolocation_zip_summary,geolocation_zip_state_id is unique.,19023,19023,PASS,CRITICAL,
+PK-08,uniqueness,dates,date_id is unique.,1314,1314,PASS,CRITICAL,
+PK-09,uniqueness,categories,category_id is unique.,74,74,PASS,CRITICAL,
+PK-10,uniqueness,reviews,review_row_id is unique.,99224,99224,PASS,CRITICAL,
+PK-11,uniqueness,customer_features,customer_unique_id is unique.,96096,96096,PASS,CRITICAL,
+PK-12,uniqueness,monthly_kpis,year_month is unique.,25,25,PASS,CRITICAL,
+PK-13,uniqueness,order_items,Composite key is unique.,112650,112650,PASS,CRITICAL,
+PK-14,uniqueness,payments,Composite key is unique.,103886,103886,PASS,CRITICAL,
+PK-15,uniqueness,order_items_flat,Composite key is unique.,112650,112650,PASS,CRITICAL,
+FK-01,referential integrity,orders.customer_id -> customers.customer_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-02,referential integrity,orders.region_id -> regions.region_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-03,referential integrity,order_items.order_id -> orders.order_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-04,referential integrity,order_items.product_id -> products.product_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-05,referential integrity,order_items.seller_id -> sellers.seller_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-06,referential integrity,payments.order_id -> orders.order_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-07,referential integrity,reviews.order_id -> orders.order_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-08,referential integrity,products.category_id -> categories.category_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-09,referential integrity,geolocation.region_id -> regions.region_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+FK-10,referential integrity,geolocation_zip_summary.region_id -> regions.region_id,Orphan count is zero.,0,0,PASS,CRITICAL,
+DATE-01,coverage,dates,Date dimension covers every timestamp date.,2016-09-04 through 2020-04-09,2016-09-04 through 2020-04-09,PASS,HIGH,
+DATE-02,coverage,dates,Date dimension is continuous.,1314,1314,PASS,HIGH,
+WARN-01,source missingness,products,Products with missing source category metadata.,610,610,WARN,MEDIUM,Retained as __unknown__; no category was invented.
+WARN-02,source missingness,products,Products with incomplete physical dimensions.,2,2,WARN,LOW,Physical values remain null.
+WARN-03,source missingness,orders,Orders missing source approval timestamp.,160,160,WARN,LOW,Expected in real operational data; preserved.
+WARN-04,source missingness,orders,Orders missing carrier-handoff timestamp.,1783,1783,WARN,LOW,Preserved and flagged.
+WARN-05,source missingness,orders,Orders missing actual customer-delivery timestamp.,2965,2965,WARN,LOW,Preserved and flagged.
+WARN-06,source sparsity,orders,Orders without an item row.,775,775,WARN,MEDIUM,Mostly non-completed lifecycle records; no order was dropped.
+WARN-07,source sparsity,orders,Orders without a payment row.,1,1,WARN,LOW,Payment value stays null.
+WARN-08,source sparsity,orders,Orders without a review row.,768,768,WARN,LOW,Review measures stay null.
+WARN-09,source anomaly,orders,Orders with chronology anomaly flag.,189,189,WARN,MEDIUM,166 carrier-before-purchase and 23 delivery-before-carrier cases; preserved for audit.
+WARN-10,source duplication,reviews,Distinct duplicated source review IDs.,789,789,WARN,LOW,No exact duplicate review rows were found; surrogate review_row_id preserves each row.
+WARN-11,source duplication,reviews,Orders with multiple review rows.,547,547,WARN,LOW,Order aggregates expose review_count and average/latest score.
+WARN-12,reconciliation,orders,Orders with item and payment totals differing by more than 0.02.,280,280,WARN,MEDIUM,Real source discrepancy; difference is exposed per order.
+WARN-13,translation,categories,Source categories without an English translation.,2,2,WARN,LOW,Portuguese source labels are retained rather than guessed.
+WARN-14,source anomaly,order_items,Shipping-limit timestamps in calendar year 2020.,4,4,WARN,MEDIUM,The purchase data ends in 2018; four source shipping deadlines extend to 2020 and are preserved.
+WARN-15,source anomaly,reviews,Review response lags longer than 365 days.,10,10,WARN,LOW,Long source lags are preserved for investigation.
+WARN-16,source duplication,geolocation,Extra rows beyond one copy in exact duplicate source geolocation groups.,261831,261831,WARN,LOW,All duplicate source observations are retained; use the postal-prefix/state summary for non-duplicating joins.
+WARN-17,source anomaly,geolocation,Coordinate observations outside the documented coarse Brazil screening envelope.,29,29,WARN,MEDIUM,Rows are preserved and flagged; summary fields provide both all-observation and in-envelope means.
+WARN-18,derived missingness,geolocation_zip_summary,Postal-prefix/state pairs with no coordinate inside the coarse screening envelope.,4,4,WARN,LOW,All-observation means remain available; in-envelope means stay null rather than being invented.
+WARN-19,source ambiguity,geolocation,Postal prefixes observed in more than one state.,8,8,WARN,LOW,"Join geolocation on both postal prefix and state, not postal prefix alone."
+REC-01,reconciliation,orders,Orders with both item and payment records reconcile within 0.02.,98665,98385,PASS_WITH_WARNINGS,MEDIUM,Non-reconciled orders remain identifiable; no balancing adjustment was applied.
+TXT-01,text cleaning,reviews,No newline or carriage-return remains inside cleaned review text.,0,0,PASS,MEDIUM,Whitespace was normalized without translating the text.
+NUM-01,range,reviews,Review scores remain within 1–5.,0,0,PASS,HIGH,
+NUM-02,range,order_items,Price and freight values are nonnegative.,0,0,PASS,HIGH,
+GEO-01,range,geolocation,Latitude and longitude stay inside valid world coordinate ranges.,0,0,PASS,HIGH,"This is a validity range check, not a claim that every coordinate is accurate."
+GEO-02,derived grain,geolocation_zip_summary,Summary rows equal distinct postal-prefix/state pairs in the full source geolocation table.,19023,19023,PASS,HIGH,
+FLAT-01,row preservation,order_items_flat,Flattened item file retains every order-item row.,112650,112650,PASS,CRITICAL,Order-level fields repeat at item grain and are explicitly labeled.
+CUST-01,derived grain,customer_features,Unique-customer feature rows equal distinct customer_unique_id values.,96096,96096,PASS,HIGH,

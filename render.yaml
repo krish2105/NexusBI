@@ -1,0 +1,24 @@
+# Render free-tier deployment for the Nexus BI backend.
+# Frontend deploys to Vercel (zero-config: set NEXT_PUBLIC_API_URL to this URL).
+services:
+  - type: web
+    name: nexus-bi-backend
+    runtime: docker
+    dockerfilePath: ./backend/Dockerfile
+    dockerContext: ./backend
+    plan: free
+    healthCheckPath: /health
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: LLM_PROVIDER
+        value: auto
+      # Optional free-tier keys (set in the Render dashboard):
+      # - key: GROQ_API_KEY
+      #   sync: false
+      # - key: APP_DB_URL          # Supabase Postgres
+      #   sync: false
+      # - key: DEMO_TARGET_URL     # read-only Postgres DSN
+      #   sync: false
+      - key: CORS_ORIGINS
+        value: '["https://your-frontend.vercel.app"]'

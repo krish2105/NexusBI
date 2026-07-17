@@ -1,0 +1,18 @@
+{
+  "suite": "forecast",
+  "method": "Holt-Winters (add trend)",
+  "train_months": 17,
+  "holdout_months": 3,
+  "actual": [
+    865124.31,
+    895507.22,
+    854686.33
+  ],
+  "predicted": [
+    1091233.69,
+    1138948.24,
+    1186185.66
+  ],
+  "MAPE_pct": 30.7,
+  "RMSE": 270974.04
+}

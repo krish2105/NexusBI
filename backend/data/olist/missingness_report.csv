@@ -1,0 +1,262 @@
+file,column_name,row_count,missing_count,missing_percent,handling
+core/regions.csv,region_id,27,0,0.000000,No missing values.
+core/regions.csv,ibge_state_code,27,0,0.000000,No missing values.
+core/regions.csv,state_code,27,0,0.000000,No missing values.
+core/regions.csv,state_name_pt,27,0,0.000000,No missing values.
+core/regions.csv,macroregion_name_en,27,0,0.000000,No missing values.
+core/regions.csv,macroregion_name_pt,27,0,0.000000,No missing values.
+core/regions.csv,country_code,27,0,0.000000,No missing values.
+core/regions.csv,country_name,27,0,0.000000,No missing values.
+supplementary/geolocation.csv,geolocation_row_id,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,source_row_number,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,geolocation_zip_code_prefix,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,geolocation_lat,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,geolocation_lng,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,geolocation_city,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,geolocation_state,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,region_id,1000163,0,0.000000,No missing values.
+supplementary/geolocation.csv,broad_brazil_bbox_outlier_flag,1000163,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,geolocation_zip_state_id,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,geolocation_zip_code_prefix,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,geolocation_state,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,region_id,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,representative_city,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,observation_count,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,distinct_city_count,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,latitude_mean_all,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,longitude_mean_all,19023,0,0.000000,No missing values.
+derived/geolocation_zip_summary.csv,latitude_mean_in_broad_bbox,19023,4,0.021027,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+derived/geolocation_zip_summary.csv,longitude_mean_in_broad_bbox,19023,4,0.021027,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+derived/geolocation_zip_summary.csv,broad_bbox_outlier_count,19023,0,0.000000,No missing values.
+core/dates.csv,date_id,1314,0,0.000000,No missing values.
+core/dates.csv,date,1314,0,0.000000,No missing values.
+core/dates.csv,day_of_month,1314,0,0.000000,No missing values.
+core/dates.csv,day_of_week_iso,1314,0,0.000000,No missing values.
+core/dates.csv,day_name,1314,0,0.000000,No missing values.
+core/dates.csv,day_name_short,1314,0,0.000000,No missing values.
+core/dates.csv,week_start_date,1314,0,0.000000,No missing values.
+core/dates.csv,iso_week,1314,0,0.000000,No missing values.
+core/dates.csv,iso_year,1314,0,0.000000,No missing values.
+core/dates.csv,month_number,1314,0,0.000000,No missing values.
+core/dates.csv,month_name,1314,0,0.000000,No missing values.
+core/dates.csv,month_name_short,1314,0,0.000000,No missing values.
+core/dates.csv,year_month,1314,0,0.000000,No missing values.
+core/dates.csv,quarter_number,1314,0,0.000000,No missing values.
+core/dates.csv,year_quarter,1314,0,0.000000,No missing values.
+core/dates.csv,year,1314,0,0.000000,No missing values.
+core/dates.csv,is_weekend,1314,0,0.000000,No missing values.
+core/dates.csv,is_month_end,1314,0,0.000000,No missing values.
+core/categories.csv,category_id,74,0,0.000000,No missing values.
+core/categories.csv,category_name_pt,74,0,0.000000,No missing values.
+core/categories.csv,category_name_en,74,0,0.000000,No missing values.
+core/categories.csv,translation_status,74,0,0.000000,No missing values.
+core/categories.csv,product_count,74,0,0.000000,No missing values.
+core/categories.csv,order_item_count,74,0,0.000000,No missing values.
+core/categories.csv,merchandise_value,74,0,0.000000,No missing values.
+core/products.csv,product_id,32951,0,0.000000,No missing values.
+core/products.csv,category_id,32951,0,0.000000,No missing values.
+core/products.csv,product_category_name_pt,32951,0,0.000000,No missing values.
+core/products.csv,product_category_name_en,32951,0,0.000000,No missing values.
+core/products.csv,category_translation_status,32951,0,0.000000,No missing values.
+core/products.csv,source_category_missing_flag,32951,0,0.000000,No missing values.
+core/products.csv,product_name_length,32951,610,1.851234,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_description_length,32951,610,1.851234,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_photos_qty,32951,610,1.851234,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_weight_g,32951,2,0.006070,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_length_cm,32951,2,0.006070,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_height_cm,32951,2,0.006070,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_width_cm,32951,2,0.006070,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_volume_cm3,32951,2,0.006070,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,product_density_g_per_cm3,32951,2,0.006070,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/products.csv,dimensions_complete_flag,32951,0,0.000000,No missing values.
+core/products.csv,content_metadata_complete_flag,32951,0,0.000000,No missing values.
+core/customers.csv,customer_id,99441,0,0.000000,No missing values.
+core/customers.csv,customer_unique_id,99441,0,0.000000,No missing values.
+core/customers.csv,customer_zip_code_prefix,99441,0,0.000000,No missing values.
+core/customers.csv,customer_city,99441,0,0.000000,No missing values.
+core/customers.csv,customer_state,99441,0,0.000000,No missing values.
+core/customers.csv,region_id,99441,0,0.000000,No missing values.
+core/customers.csv,customer_order_sequence,99441,0,0.000000,No missing values.
+core/customers.csv,first_purchase_timestamp,99441,0,0.000000,No missing values.
+core/customers.csv,last_purchase_timestamp,99441,0,0.000000,No missing values.
+core/customers.csv,lifetime_order_count,99441,0,0.000000,No missing values.
+core/customers.csv,repeat_customer_flag,99441,0,0.000000,No missing values.
+core/customers.csv,distinct_location_count,99441,0,0.000000,No missing values.
+core/sellers.csv,seller_id,3095,0,0.000000,No missing values.
+core/sellers.csv,seller_zip_code_prefix,3095,0,0.000000,No missing values.
+core/sellers.csv,seller_city,3095,0,0.000000,No missing values.
+core/sellers.csv,seller_state,3095,0,0.000000,No missing values.
+core/sellers.csv,region_id,3095,0,0.000000,No missing values.
+core/sellers.csv,first_sale_timestamp,3095,0,0.000000,No missing values.
+core/sellers.csv,last_sale_timestamp,3095,0,0.000000,No missing values.
+core/sellers.csv,sold_item_count,3095,0,0.000000,No missing values.
+core/sellers.csv,distinct_order_count,3095,0,0.000000,No missing values.
+core/sellers.csv,distinct_product_count,3095,0,0.000000,No missing values.
+core/sellers.csv,merchandise_value,3095,0,0.000000,No missing values.
+core/sellers.csv,freight_value,3095,0,0.000000,No missing values.
+core/orders.csv,order_id,99441,0,0.000000,No missing values.
+core/orders.csv,customer_id,99441,0,0.000000,No missing values.
+core/orders.csv,customer_unique_id,99441,0,0.000000,No missing values.
+core/orders.csv,region_id,99441,0,0.000000,No missing values.
+core/orders.csv,order_status,99441,0,0.000000,No missing values.
+core/orders.csv,order_purchase_timestamp,99441,0,0.000000,No missing values.
+core/orders.csv,order_date_id,99441,0,0.000000,No missing values.
+core/orders.csv,order_approved_at,99441,160,0.160899,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,order_delivered_carrier_timestamp,99441,1783,1.793023,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,order_delivered_customer_timestamp,99441,2965,2.981668,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,order_estimated_delivery_timestamp,99441,0,0.000000,No missing values.
+core/orders.csv,item_count,99441,0,0.000000,No missing values.
+core/orders.csv,distinct_product_count,99441,0,0.000000,No missing values.
+core/orders.csv,distinct_seller_count,99441,0,0.000000,No missing values.
+core/orders.csv,merchandise_value,99441,0,0.000000,No missing values.
+core/orders.csv,freight_value,99441,0,0.000000,No missing values.
+core/orders.csv,order_line_total_value,99441,0,0.000000,No missing values.
+core/orders.csv,payment_count,99441,0,0.000000,No missing values.
+core/orders.csv,payment_value,99441,1,0.001006,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,primary_payment_type,99441,1,0.001006,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,max_payment_installments,99441,1,0.001006,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,review_count,99441,0,0.000000,No missing values.
+core/orders.csv,average_review_score,99441,768,0.772317,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,latest_review_score,99441,768,0.772317,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,has_review_comment_flag,99441,0,0.000000,No missing values.
+core/orders.csv,approval_lead_hours,99441,160,0.160899,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,purchase_to_carrier_days,99441,1783,1.793023,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,purchase_to_delivery_days,99441,2965,2.981668,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,carrier_to_customer_days,99441,2966,2.982673,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,delivery_vs_estimate_days,99441,2965,2.981668,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,delivered_late_flag,99441,2965,2.981668,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,has_items_flag,99441,0,0.000000,No missing values.
+core/orders.csv,has_payment_flag,99441,0,0.000000,No missing values.
+core/orders.csv,has_review_flag,99441,0,0.000000,No missing values.
+core/orders.csv,source_missing_approved_at_flag,99441,0,0.000000,No missing values.
+core/orders.csv,source_missing_carrier_timestamp_flag,99441,0,0.000000,No missing values.
+core/orders.csv,source_missing_customer_delivery_timestamp_flag,99441,0,0.000000,No missing values.
+core/orders.csv,chronology_anomaly_flag,99441,0,0.000000,No missing values.
+core/orders.csv,payment_reconciliation_difference,99441,776,0.780362,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,payment_reconciled_flag,99441,776,0.780362,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+core/orders.csv,delivered_status_flag,99441,0,0.000000,No missing values.
+core/orders.csv,canceled_status_flag,99441,0,0.000000,No missing values.
+core/order_items.csv,order_id,112650,0,0.000000,No missing values.
+core/order_items.csv,order_item_id,112650,0,0.000000,No missing values.
+core/order_items.csv,product_id,112650,0,0.000000,No missing values.
+core/order_items.csv,seller_id,112650,0,0.000000,No missing values.
+core/order_items.csv,shipping_limit_timestamp,112650,0,0.000000,No missing values.
+core/order_items.csv,shipping_limit_date_id,112650,0,0.000000,No missing values.
+core/order_items.csv,quantity,112650,0,0.000000,No missing values.
+core/order_items.csv,unit_price,112650,0,0.000000,No missing values.
+core/order_items.csv,freight_value,112650,0,0.000000,No missing values.
+core/order_items.csv,line_merchandise_value,112650,0,0.000000,No missing values.
+core/order_items.csv,line_total_value,112650,0,0.000000,No missing values.
+supplementary/payments.csv,order_id,103886,0,0.000000,No missing values.
+supplementary/payments.csv,payment_sequential,103886,0,0.000000,No missing values.
+supplementary/payments.csv,payment_type,103886,0,0.000000,No missing values.
+supplementary/payments.csv,payment_installments,103886,0,0.000000,No missing values.
+supplementary/payments.csv,payment_value,103886,0,0.000000,No missing values.
+supplementary/reviews.csv,review_row_id,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,review_id,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,order_id,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,review_score,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,review_comment_title,99224,87658,88.343546,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+supplementary/reviews.csv,review_comment_message,99224,58274,58.729743,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+supplementary/reviews.csv,has_title_flag,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,has_message_flag,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,review_creation_timestamp,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,review_creation_date_id,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,review_answer_timestamp,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,response_lag_hours,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,duplicate_review_id_flag,99224,0,0.000000,No missing values.
+supplementary/reviews.csv,multiple_reviews_for_order_flag,99224,0,0.000000,No missing values.
+derived/monthly_kpis.csv,month_start,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,year,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,month_number,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,year_month,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,order_count,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,delivered_order_count,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,canceled_order_count,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,unique_customer_count,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,units_sold,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,merchandise_value,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,freight_value,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,gross_order_value,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,payment_value,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,average_gross_order_value,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,average_review_score,25,0,0.000000,No missing values.
+derived/monthly_kpis.csv,late_delivery_rate,25,2,8.000000,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+derived/monthly_kpis.csv,average_delivery_lead_days,25,2,8.000000,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/customer_features.csv,customer_unique_id,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,latest_customer_city,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,latest_customer_state,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,region_id,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,first_purchase_timestamp,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,last_purchase_timestamp,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,active_span_days,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,recency_days_at_dataset_end,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,order_count,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,delivered_order_count,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,items_purchased,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,distinct_products_purchased,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,distinct_sellers_used,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,merchandise_value,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,freight_value,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,gross_order_value,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,payment_value,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,average_gross_order_value,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,average_review_score,96096,716,0.745088,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/customer_features.csv,reviewed_order_count,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,late_delivery_rate,96096,2740,2.851315,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/customer_features.csv,average_delivery_lead_days,96096,2740,2.851315,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/customer_features.csv,favorite_category_id,96096,676,0.703463,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/customer_features.csv,favorite_payment_type,96096,1,0.001041,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/customer_features.csv,repeat_customer_flag,96096,0,0.000000,No missing values.
+model_ready/customer_features.csv,location_changed_flag,96096,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_item_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_purchase_timestamp,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_date_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_status,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,customer_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,customer_unique_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,customer_order_sequence,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,customer_city,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,customer_state,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,customer_macroregion,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,seller_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,seller_city,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,seller_state,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,seller_macroregion,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,product_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,category_id,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,product_category_name_pt,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,product_category_name_en,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,source_category_missing_flag,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,product_name_length,112650,1603,1.422992,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,product_description_length,112650,1603,1.422992,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,product_photos_qty,112650,1603,1.422992,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,product_weight_g,112650,18,0.015979,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,product_length_cm,112650,18,0.015979,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,product_height_cm,112650,18,0.015979,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,product_width_cm,112650,18,0.015979,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,product_volume_cm3,112650,18,0.015979,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,shipping_limit_timestamp,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,quantity,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,unit_price,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,line_freight_value,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,line_merchandise_value,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,line_total_value,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_item_count_in_order,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_distinct_product_count,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_distinct_seller_count,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_merchandise_value,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_freight_value,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_line_total_value,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,order_payment_value,112650,3,0.002663,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,primary_payment_type,112650,3,0.002663,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,max_payment_installments,112650,3,0.002663,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,average_review_score,112650,942,0.836218,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,latest_review_score,112650,942,0.836218,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,purchase_to_delivery_days,112650,2454,2.178429,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,delivery_vs_estimate_days,112650,2454,2.178429,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,delivered_late_flag,112650,2454,2.178429,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,chronology_anomaly_flag,112650,0,0.000000,No missing values.
+model_ready/order_items_flat.csv,payment_reconciliation_difference,112650,3,0.002663,Preserved as source/derived null; see flags and data dictionary. No value was imputed.
+model_ready/order_items_flat.csv,payment_reconciled_flag,112650,3,0.002663,Preserved as source/derived null; see flags and data dictionary. No value was imputed.

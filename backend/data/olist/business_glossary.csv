@@ -1,0 +1,19 @@
+term,definition,canonical_sql,required_tables,caveats
+postal geolocation,Approximate coordinates at postal-prefix/state grain.,"geolocation_zip_summary.latitude_mean_in_broad_bbox, geolocation_zip_summary.longitude_mean_in_broad_bbox",geolocation_zip_summary,"Join on both postal prefix and state. Coordinates are source observations, not customer-level street addresses."
+merchandise revenue,Sum of item prices excluding freight.,SUM(order_items.line_merchandise_value),order_items,Use this as the default product-sales metric; the dataset has no tax or refund table.
+gross order value,Merchandise plus freight.,SUM(order_items.line_total_value),order_items,At order grain use orders.order_line_total_value.
+payment value,Amount captured in source payment rows.,SUM(payments.payment_value),payments,May differ slightly from item-plus-freight totals; inspect reconciliation fields.
+order count,Count of distinct orders.,COUNT(DISTINCT orders.order_id),orders,Do not count item rows as orders.
+units sold,Count of order-item occurrences.,SUM(order_items.quantity),order_items,quantity is 1 for every source item row.
+average order value,Average gross item-plus-freight value per order.,AVG(orders.order_line_total_value),orders,State merchandise-only explicitly when freight should be excluded.
+delivered order,Order whose source status is delivered.,orders.delivered_status_flag = 1,orders,Status-based; actual delivery timestamp can be separately checked.
+canceled order,Order whose source status is canceled.,orders.canceled_status_flag = 1,orders,Unavailable is a separate source status.
+unique customer,Distinct shopper across orders.,COUNT(DISTINCT orders.customer_unique_id),orders,"Use customer_unique_id, not the order-scoped customer_id."
+repeat customer,Shopper with more than one source order.,customers.repeat_customer_flag = 1,customers,Deduplicate by customer_unique_id when counting repeat shoppers.
+late delivery,Actual customer delivery after the source estimate.,orders.delivered_late_flag = 1,orders,Null when actual delivery timestamp is absent.
+delivery lead time,Elapsed days from purchase to actual customer delivery.,orders.purchase_to_delivery_days,orders,Exclude nulls; inspect chronology_anomaly_flag before modeling.
+freight ratio,Freight divided by gross order value.,"SUM(orders.freight_value) / NULLIF(SUM(orders.order_line_total_value),0)",orders,At item grain use line freight and line total.
+review score,Customer rating on a 1–5 scale.,AVG(orders.average_review_score),orders,Some orders have no review; multiple review rows are averaged.
+primary payment type,Highest-value payment method for an order.,orders.primary_payment_type,orders,Payment sequence breaks equal-value ties.
+last quarter,Most recent complete calendar quarter within the selected date context.,calendar quarter using dates.year and dates.quarter_number,dates,The application should state the resolved date range as an assumption.
+revenue,Ambiguous term mapped by default to merchandise revenue.,SUM(order_items.line_merchandise_value),order_items,Expose the assumption; use gross order value when freight is explicitly included.

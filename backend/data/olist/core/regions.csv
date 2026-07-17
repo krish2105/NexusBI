@@ -1,0 +1,28 @@
+region_id,ibge_state_code,state_code,state_name_pt,macroregion_name_en,macroregion_name_pt,country_code,country_name
+RO,11,RO,Rondônia,North,Norte,BR,Brazil
+AC,12,AC,Acre,North,Norte,BR,Brazil
+AM,13,AM,Amazonas,North,Norte,BR,Brazil
+RR,14,RR,Roraima,North,Norte,BR,Brazil
+PA,15,PA,Pará,North,Norte,BR,Brazil
+AP,16,AP,Amapá,North,Norte,BR,Brazil
+TO,17,TO,Tocantins,North,Norte,BR,Brazil
+MA,21,MA,Maranhão,Northeast,Nordeste,BR,Brazil
+PI,22,PI,Piauí,Northeast,Nordeste,BR,Brazil
+CE,23,CE,Ceará,Northeast,Nordeste,BR,Brazil
+RN,24,RN,Rio Grande do Norte,Northeast,Nordeste,BR,Brazil
+PB,25,PB,Paraíba,Northeast,Nordeste,BR,Brazil
+PE,26,PE,Pernambuco,Northeast,Nordeste,BR,Brazil
+AL,27,AL,Alagoas,Northeast,Nordeste,BR,Brazil
+SE,28,SE,Sergipe,Northeast,Nordeste,BR,Brazil
+BA,29,BA,Bahia,Northeast,Nordeste,BR,Brazil
+MG,31,MG,Minas Gerais,Southeast,Sudeste,BR,Brazil
+ES,32,ES,Espírito Santo,Southeast,Sudeste,BR,Brazil
+RJ,33,RJ,Rio de Janeiro,Southeast,Sudeste,BR,Brazil
+SP,35,SP,São Paulo,Southeast,Sudeste,BR,Brazil
+PR,41,PR,Paraná,South,Sul,BR,Brazil
+SC,42,SC,Santa Catarina,South,Sul,BR,Brazil
+RS,43,RS,Rio Grande do Sul,South,Sul,BR,Brazil
+MS,50,MS,Mato Grosso do Sul,Central-West,Centro-Oeste,BR,Brazil
+MT,51,MT,Mato Grosso,Central-West,Centro-Oeste,BR,Brazil
+GO,52,GO,Goiás,Central-West,Centro-Oeste,BR,Brazil
+DF,53,DF,Distrito Federal,Central-West,Centro-Oeste,BR,Brazil

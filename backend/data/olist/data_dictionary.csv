@@ -1,0 +1,262 @@
+file,table_name,grain,column_position,column_name,data_type,nullable,definition
+core/regions.csv,regions,One row per Brazilian federation unit.,1,region_id,TEXT,No,Brazilian state abbreviation used as the region dimension key.
+core/regions.csv,regions,One row per Brazilian federation unit.,2,ibge_state_code,INTEGER,No,Two-digit code assigned to the federation unit by IBGE.
+core/regions.csv,regions,One row per Brazilian federation unit.,3,state_code,TEXT,No,Two-letter Brazilian federation unit abbreviation.
+core/regions.csv,regions,One row per Brazilian federation unit.,4,state_name_pt,TEXT,No,Official federation unit name in Portuguese.
+core/regions.csv,regions,One row per Brazilian federation unit.,5,macroregion_name_en,TEXT,No,Brazilian macroregion name in English.
+core/regions.csv,regions,One row per Brazilian federation unit.,6,macroregion_name_pt,TEXT,No,Brazilian macroregion name in Portuguese.
+core/regions.csv,regions,One row per Brazilian federation unit.,7,country_code,TEXT,No,ISO-style country abbreviation; BR for every row.
+core/regions.csv,regions,One row per Brazilian federation unit.,8,country_name,TEXT,No,Country name; Brazil for every row.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,1,geolocation_row_id,TEXT,No,Deterministic surrogate key for the preserved source geolocation row.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,2,source_row_number,INTEGER,No,One-based physical row sequence in the official source geolocation CSV.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,3,geolocation_zip_code_prefix,TEXT,No,First five digits of the Brazilian postal code recorded by the source.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,4,geolocation_lat,NUMERIC,No,Latitude recorded in the source geolocation observation; source precision is preserved.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,5,geolocation_lng,NUMERIC,No,Longitude recorded in the source geolocation observation; source precision is preserved.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,6,geolocation_city,TEXT,No,Source geolocation city with Unicode and whitespace normalization only.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,7,geolocation_state,TEXT,No,Two-letter source federation unit abbreviation for the geolocation observation.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,8,region_id,TEXT,No,Brazilian state abbreviation used as the region dimension key.
+supplementary/geolocation.csv,geolocation,One row per official source geolocation observation; no duplicate observation is removed.,9,broad_brazil_bbox_outlier_flag,BOOLEAN,No,1 when coordinates fall outside the coarse screening envelope latitude -35 to 6 and longitude -75 to -32; the row is preserved.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",1,geolocation_zip_state_id,TEXT,No,Deterministic postal-prefix plus state key used by the geolocation summary.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",2,geolocation_zip_code_prefix,TEXT,No,First five digits of the Brazilian postal code recorded by the source.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",3,geolocation_state,TEXT,No,Two-letter source federation unit abbreviation for the geolocation observation.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",4,region_id,TEXT,No,Brazilian state abbreviation used as the region dimension key.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",5,representative_city,TEXT,No,Most frequently observed cleaned city for the postal-prefix/state pair; alphabetical order breaks ties.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",6,observation_count,INTEGER,No,Number of source geolocation observations for the postal-prefix/state pair.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",7,distinct_city_count,INTEGER,No,Number of distinct cleaned city labels for the postal-prefix/state pair.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",8,latitude_mean_all,NUMERIC,No,Arithmetic mean latitude across all source observations for the postal-prefix/state pair.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",9,longitude_mean_all,NUMERIC,No,Arithmetic mean longitude across all source observations for the postal-prefix/state pair.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",10,latitude_mean_in_broad_bbox,NUMERIC,Yes,Mean latitude after excluding observations outside the documented coarse Brazil screening envelope; null when none remain.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",11,longitude_mean_in_broad_bbox,NUMERIC,Yes,Mean longitude after excluding observations outside the documented coarse Brazil screening envelope; null when none remain.
+derived/geolocation_zip_summary.csv,geolocation_zip_summary,"One row per observed postal-prefix and state pair, designed for non-duplicating joins.",12,broad_bbox_outlier_count,INTEGER,No,Count of source observations outside the documented coarse Brazil screening envelope.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,1,date_id,INTEGER,No,Calendar key in YYYYMMDD form.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,2,date,DATE,No,Calendar date in ISO YYYY-MM-DD form.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,3,day_of_month,INTEGER,No,Day number within the month.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,4,day_of_week_iso,INTEGER,No,ISO weekday number where Monday=1 and Sunday=7.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,5,day_name,TEXT,No,English weekday name.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,6,day_name_short,TEXT,No,Three-letter English weekday name.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,7,week_start_date,DATE,No,Monday date for the ISO week containing this date.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,8,iso_week,INTEGER,No,ISO week number.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,9,iso_year,INTEGER,No,ISO week-based year.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,10,month_number,INTEGER,No,Calendar month number 1-12.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,11,month_name,TEXT,No,English calendar month name.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,12,month_name_short,TEXT,No,Three-letter English month name.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,13,year_month,TEXT,No,Calendar year and month in YYYY-MM form.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,14,quarter_number,INTEGER,No,Calendar quarter number 1-4.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,15,year_quarter,TEXT,No,Calendar year and quarter in YYYY-Qn form.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,16,year,INTEGER,No,Calendar year.
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,17,is_weekend,BOOLEAN,No,"1 for Saturday/Sunday, otherwise 0."
+core/dates.csv,dates,One row per calendar date spanning all source timestamps.,18,is_month_end,BOOLEAN,No,1 when the date is the final calendar day of its month.
+core/categories.csv,categories,One row per observed product category plus an explicit unknown category.,1,category_id,TEXT,No,Product category key. __unknown__ denotes a missing source category.
+core/categories.csv,categories,One row per observed product category plus an explicit unknown category.,2,category_name_pt,TEXT,No,"Portuguese source category label, or unknown for a missing source category."
+core/categories.csv,categories,One row per observed product category plus an explicit unknown category.,3,category_name_en,TEXT,No,Source English translation when available; otherwise the Portuguese source label is retained.
+core/categories.csv,categories,One row per observed product category plus an explicit unknown category.,4,translation_status,TEXT,No,"Whether the category has a source translation, a Portuguese fallback, or an unknown source category."
+core/categories.csv,categories,One row per observed product category plus an explicit unknown category.,5,product_count,INTEGER,No,Number of products assigned to the category.
+core/categories.csv,categories,One row per observed product category plus an explicit unknown category.,6,order_item_count,INTEGER,No,Number of order-item rows assigned to the category.
+core/categories.csv,categories,One row per observed product category plus an explicit unknown category.,7,merchandise_value,"NUMERIC(14,2)",No,Sum of item prices excluding freight at the stated grain.
+core/products.csv,products,One row per source product.,1,product_id,TEXT,No,Anonymized product identifier.
+core/products.csv,products,One row per source product.,2,category_id,TEXT,No,Product category key. __unknown__ denotes a missing source category.
+core/products.csv,products,One row per source product.,3,product_category_name_pt,TEXT,No,"Portuguese category attached to the product, with unknown for source nulls."
+core/products.csv,products,One row per source product.,4,product_category_name_en,TEXT,No,English source translation where available; otherwise a documented source-label fallback.
+core/products.csv,products,One row per source product.,5,category_translation_status,TEXT,No,Translation provenance for the product category.
+core/products.csv,products,One row per source product.,6,source_category_missing_flag,BOOLEAN,No,1 when the source product category was blank.
+core/products.csv,products,One row per source product.,7,product_name_length,INTEGER,Yes,Character length of the anonymized product name recorded by the source.
+core/products.csv,products,One row per source product.,8,product_description_length,INTEGER,Yes,Character length of the product description recorded by the source.
+core/products.csv,products,One row per source product.,9,product_photos_qty,INTEGER,Yes,Number of product photos recorded by the source.
+core/products.csv,products,One row per source product.,10,product_weight_g,NUMERIC,Yes,Product weight in grams.
+core/products.csv,products,One row per source product.,11,product_length_cm,NUMERIC,Yes,Product package length in centimeters.
+core/products.csv,products,One row per source product.,12,product_height_cm,NUMERIC,Yes,Product package height in centimeters.
+core/products.csv,products,One row per source product.,13,product_width_cm,NUMERIC,Yes,Product package width in centimeters.
+core/products.csv,products,One row per source product.,14,product_volume_cm3,NUMERIC,Yes,Derived package volume: length × height × width in cubic centimeters.
+core/products.csv,products,One row per source product.,15,product_density_g_per_cm3,NUMERIC,Yes,Derived product weight divided by package volume.
+core/products.csv,products,One row per source product.,16,dimensions_complete_flag,BOOLEAN,No,1 when all four physical measurements are present.
+core/products.csv,products,One row per source product.,17,content_metadata_complete_flag,BOOLEAN,No,"1 when name length, description length, and photo count are all present."
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,1,customer_id,TEXT,No,Order-scoped anonymized customer key used by the source and orders table.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,2,customer_unique_id,TEXT,No,Stable anonymized shopper key that links repeat purchases.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,3,customer_zip_code_prefix,TEXT,No,"First five digits of the customer postal code, retained as text to preserve leading zeros."
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,4,customer_city,TEXT,No,"Customer city from the source, Unicode/whitespace normalized only."
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,5,customer_state,TEXT,No,Two-letter customer federation unit abbreviation.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,6,region_id,TEXT,No,Brazilian state abbreviation used as the region dimension key.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,7,customer_order_sequence,INTEGER,No,Chronological purchase sequence for the customer_unique_id.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,8,first_purchase_timestamp,TIMESTAMP,No,Earliest order purchase timestamp for the customer or seller grain.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,9,last_purchase_timestamp,TIMESTAMP,No,Latest order purchase timestamp for the customer grain.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,10,lifetime_order_count,INTEGER,No,Number of source orders associated with the customer_unique_id.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,11,repeat_customer_flag,BOOLEAN,No,1 when the customer_unique_id placed more than one order.
+core/customers.csv,customers,One row per source customer_id (order-scoped customer profile).,12,distinct_location_count,INTEGER,No,Count of distinct postal-prefix/city/state combinations observed for the customer_unique_id.
+core/sellers.csv,sellers,One row per source seller.,1,seller_id,TEXT,No,Anonymized seller identifier.
+core/sellers.csv,sellers,One row per source seller.,2,seller_zip_code_prefix,TEXT,No,First five digits of the seller postal code.
+core/sellers.csv,sellers,One row per source seller.,3,seller_city,TEXT,No,"Seller city from the source, Unicode/whitespace normalized only."
+core/sellers.csv,sellers,One row per source seller.,4,seller_state,TEXT,No,Two-letter seller federation unit abbreviation.
+core/sellers.csv,sellers,One row per source seller.,5,region_id,TEXT,No,Brazilian state abbreviation used as the region dimension key.
+core/sellers.csv,sellers,One row per source seller.,6,first_sale_timestamp,TIMESTAMP,No,Earliest purchase timestamp for an item sold by the seller.
+core/sellers.csv,sellers,One row per source seller.,7,last_sale_timestamp,TIMESTAMP,No,Latest purchase timestamp for an item sold by the seller.
+core/sellers.csv,sellers,One row per source seller.,8,sold_item_count,INTEGER,No,Count of source order-item rows fulfilled by the seller.
+core/sellers.csv,sellers,One row per source seller.,9,distinct_order_count,INTEGER,No,Number of distinct orders fulfilled by the seller.
+core/sellers.csv,sellers,One row per source seller.,10,distinct_product_count,INTEGER,No,Number of distinct products at the stated grain.
+core/sellers.csv,sellers,One row per source seller.,11,merchandise_value,"NUMERIC(14,2)",No,Sum of item prices excluding freight at the stated grain.
+core/sellers.csv,sellers,One row per source seller.,12,freight_value,"NUMERIC(14,2)",No,Freight charge at the stated grain.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",1,order_id,TEXT,No,Anonymized order identifier.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",2,customer_id,TEXT,No,Order-scoped anonymized customer key used by the source and orders table.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",3,customer_unique_id,TEXT,No,Stable anonymized shopper key that links repeat purchases.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",4,region_id,TEXT,No,Brazilian state abbreviation used as the region dimension key.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",5,order_status,TEXT,No,Order lifecycle status recorded by the source.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",6,order_purchase_timestamp,TIMESTAMP,No,Date and time at which the order was placed.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",7,order_date_id,INTEGER,No,Date dimension key derived from order_purchase_timestamp.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",8,order_approved_at,TIMESTAMP,Yes,Date and time at which payment/order approval occurred; blank when absent in source.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",9,order_delivered_carrier_timestamp,TIMESTAMP,Yes,Date and time the order was handed to the carrier; blank when absent.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",10,order_delivered_customer_timestamp,TIMESTAMP,Yes,Actual customer delivery timestamp; blank when absent.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",11,order_estimated_delivery_timestamp,TIMESTAMP,No,Estimated delivery timestamp shown in the source.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",12,item_count,INTEGER,No,Number of source order-item rows in the order.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",13,distinct_product_count,INTEGER,No,Number of distinct products at the stated grain.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",14,distinct_seller_count,INTEGER,No,Number of distinct sellers in the order.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",15,merchandise_value,"NUMERIC(14,2)",No,Sum of item prices excluding freight at the stated grain.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",16,freight_value,"NUMERIC(14,2)",No,Freight charge at the stated grain.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",17,order_line_total_value,"NUMERIC(14,2)",No,Order merchandise plus freight summed from item rows.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",18,payment_count,INTEGER,No,Number of payment rows associated with the order.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",19,payment_value,"NUMERIC(14,2)",Yes,Value recorded for the payment row or aggregated order/customer grain; null where the source order has no payment row.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",20,primary_payment_type,TEXT,Yes,Payment type from the highest-value payment row; sequence breaks ties.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",21,max_payment_installments,INTEGER,Yes,Largest installment count across the order payment rows.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",22,review_count,INTEGER,No,Number of review rows associated with the order.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",23,average_review_score,NUMERIC,Yes,Mean review score for the order or aggregate grain.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",24,latest_review_score,INTEGER,Yes,Score from the review row with the latest answer timestamp.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",25,has_review_comment_flag,BOOLEAN,No,1 when at least one order review contains title or message text.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",26,approval_lead_hours,NUMERIC,Yes,Hours from purchase to approval.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",27,purchase_to_carrier_days,NUMERIC,Yes,Days from purchase to carrier handoff.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",28,purchase_to_delivery_days,NUMERIC,Yes,Days from purchase to actual customer delivery.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",29,carrier_to_customer_days,NUMERIC,Yes,Days from carrier handoff to actual customer delivery.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",30,delivery_vs_estimate_days,NUMERIC,Yes,Signed actual-delivery minus estimated-delivery difference in days; positive means late.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",31,delivered_late_flag,BOOLEAN,Yes,1 when actual delivery occurred after the estimated delivery timestamp.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",32,has_items_flag,BOOLEAN,No,1 when at least one source order-item row exists.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",33,has_payment_flag,BOOLEAN,No,1 when at least one source payment row exists.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",34,has_review_flag,BOOLEAN,No,1 when at least one source review row exists.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",35,source_missing_approved_at_flag,BOOLEAN,No,1 when the source approval timestamp is blank.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",36,source_missing_carrier_timestamp_flag,BOOLEAN,No,1 when the source carrier-handoff timestamp is blank.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",37,source_missing_customer_delivery_timestamp_flag,BOOLEAN,No,1 when the source actual-delivery timestamp is blank.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",38,chronology_anomaly_flag,BOOLEAN,No,1 when carrier handoff precedes purchase or delivery precedes carrier handoff.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",39,payment_reconciliation_difference,"NUMERIC(14,2)",Yes,Order payment value minus item merchandise-plus-freight total.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",40,payment_reconciled_flag,BOOLEAN,Yes,1 when the absolute payment reconciliation difference is at most 0.02.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",41,delivered_status_flag,BOOLEAN,No,1 when order_status is delivered.
+core/orders.csv,orders,"One row per source order, enriched with audited aggregates and flags.",42,canceled_status_flag,BOOLEAN,No,1 when order_status is canceled.
+core/order_items.csv,order_items,One row per source order item.,1,order_id,TEXT,No,Anonymized order identifier.
+core/order_items.csv,order_items,One row per source order item.,2,order_item_id,INTEGER,No,Item sequence number within an order; together with order_id forms the primary key.
+core/order_items.csv,order_items,One row per source order item.,3,product_id,TEXT,No,Anonymized product identifier.
+core/order_items.csv,order_items,One row per source order item.,4,seller_id,TEXT,No,Anonymized seller identifier.
+core/order_items.csv,order_items,One row per source order item.,5,shipping_limit_timestamp,TIMESTAMP,No,Seller shipping deadline recorded by the source.
+core/order_items.csv,order_items,One row per source order item.,6,shipping_limit_date_id,INTEGER,No,Date dimension key derived from shipping_limit_timestamp.
+core/order_items.csv,order_items,One row per source order item.,7,quantity,INTEGER,No,Constant 1 because each source order-item row represents one item occurrence.
+core/order_items.csv,order_items,One row per source order item.,8,unit_price,"NUMERIC(14,2)",No,Source item price excluding freight.
+core/order_items.csv,order_items,One row per source order item.,9,freight_value,"NUMERIC(14,2)",No,Freight charge at the stated grain.
+core/order_items.csv,order_items,One row per source order item.,10,line_merchandise_value,"NUMERIC(14,2)",No,Item merchandise value excluding freight; equal to unit_price because quantity=1.
+core/order_items.csv,order_items,One row per source order item.,11,line_total_value,"NUMERIC(14,2)",No,Item merchandise value plus item freight charge.
+supplementary/payments.csv,payments,One row per source order payment sequence.,1,order_id,TEXT,No,Anonymized order identifier.
+supplementary/payments.csv,payments,One row per source order payment sequence.,2,payment_sequential,INTEGER,No,Sequence number for split/multiple payments within an order.
+supplementary/payments.csv,payments,One row per source order payment sequence.,3,payment_type,TEXT,No,Payment method recorded by the source.
+supplementary/payments.csv,payments,One row per source order payment sequence.,4,payment_installments,INTEGER,No,Number of installments recorded for the payment row.
+supplementary/payments.csv,payments,One row per source order payment sequence.,5,payment_value,"NUMERIC(14,2)",Yes,Value recorded for the payment row or aggregated order/customer grain; null where the source order has no payment row.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,1,review_row_id,TEXT,No,Deterministic row key added because source review_id is not unique.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,2,review_id,TEXT,No,Anonymized review identifier from the source; may occur on more than one row.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,3,order_id,TEXT,No,Anonymized order identifier.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,4,review_score,INTEGER,No,Customer rating from 1 to 5.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,5,review_comment_title,TEXT,Yes,Whitespace-normalized source review title; blank means no title was supplied.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,6,review_comment_message,TEXT,Yes,Whitespace-normalized source review message; blank means no message was supplied.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,7,has_title_flag,BOOLEAN,No,1 when a nonblank review title exists.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,8,has_message_flag,BOOLEAN,No,1 when a nonblank review message exists.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,9,review_creation_timestamp,TIMESTAMP,No,Timestamp at which the review request/review was created in the source.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,10,review_creation_date_id,INTEGER,No,Date dimension key derived from review_creation_timestamp.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,11,review_answer_timestamp,TIMESTAMP,No,Timestamp at which the customer answered the review.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,12,response_lag_hours,NUMERIC,No,Hours between review creation and review answer timestamps.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,13,duplicate_review_id_flag,BOOLEAN,No,1 when the same source review_id appears on multiple rows.
+supplementary/reviews.csv,reviews,One row per source review row; a deterministic surrogate key is added.,14,multiple_reviews_for_order_flag,BOOLEAN,No,1 when an order has more than one review row.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,1,month_start,DATE,No,First calendar date of the KPI month.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,2,year,INTEGER,No,Calendar year.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,3,month_number,INTEGER,No,Calendar month number 1-12.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,4,year_month,TEXT,No,Calendar year and month in YYYY-MM form.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,5,order_count,INTEGER,No,Number of orders at the stated aggregate grain.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,6,delivered_order_count,INTEGER,No,Number of orders whose source status is delivered.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,7,canceled_order_count,INTEGER,No,Number of orders whose source status is canceled.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,8,unique_customer_count,INTEGER,No,Count of distinct customer_unique_id values.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,9,units_sold,INTEGER,No,Count of source order-item rows; each row is one item occurrence.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,10,merchandise_value,"NUMERIC(14,2)",No,Sum of item prices excluding freight at the stated grain.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,11,freight_value,"NUMERIC(14,2)",No,Freight charge at the stated grain.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,12,gross_order_value,"NUMERIC(14,2)",No,Merchandise plus freight summed at the stated grain.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,13,payment_value,"NUMERIC(14,2)",Yes,Value recorded for the payment row or aggregated order/customer grain; null where the source order has no payment row.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,14,average_gross_order_value,"NUMERIC(14,2)",No,Mean merchandise-plus-freight order value.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,15,average_review_score,NUMERIC,Yes,Mean review score for the order or aggregate grain.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,16,late_delivery_rate,NUMERIC,Yes,Share of orders with known actual delivery timestamps that were delivered late.
+derived/monthly_kpis.csv,monthly_kpis,One row per purchase month.,17,average_delivery_lead_days,NUMERIC,Yes,Mean purchase-to-delivery duration among orders with actual delivery timestamps.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,1,customer_unique_id,TEXT,No,Stable anonymized shopper key that links repeat purchases.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,2,latest_customer_city,TEXT,No,Customer city from the shopper’s most recent order in the dataset.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,3,latest_customer_state,TEXT,No,Customer state from the shopper’s most recent order in the dataset.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,4,region_id,TEXT,No,Brazilian state abbreviation used as the region dimension key.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,5,first_purchase_timestamp,TIMESTAMP,No,Earliest order purchase timestamp for the customer or seller grain.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,6,last_purchase_timestamp,TIMESTAMP,No,Latest order purchase timestamp for the customer grain.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,7,active_span_days,NUMERIC,No,Days between the shopper’s first and last purchases.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,8,recency_days_at_dataset_end,INTEGER,No,Days from the shopper’s last purchase to the maximum purchase timestamp in this release.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,9,order_count,INTEGER,No,Number of orders at the stated aggregate grain.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,10,delivered_order_count,INTEGER,No,Number of orders whose source status is delivered.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,11,items_purchased,INTEGER,No,Count of source order-item rows purchased by the shopper.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,12,distinct_products_purchased,INTEGER,No,Count of distinct products purchased by the shopper.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,13,distinct_sellers_used,INTEGER,No,Count of distinct sellers used by the shopper.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,14,merchandise_value,"NUMERIC(14,2)",No,Sum of item prices excluding freight at the stated grain.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,15,freight_value,"NUMERIC(14,2)",No,Freight charge at the stated grain.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,16,gross_order_value,"NUMERIC(14,2)",No,Merchandise plus freight summed at the stated grain.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,17,payment_value,"NUMERIC(14,2)",Yes,Value recorded for the payment row or aggregated order/customer grain; null where the source order has no payment row.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,18,average_gross_order_value,"NUMERIC(14,2)",No,Mean merchandise-plus-freight order value.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,19,average_review_score,NUMERIC,Yes,Mean review score for the order or aggregate grain.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,20,reviewed_order_count,INTEGER,No,Number of shopper orders with at least one review row.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,21,late_delivery_rate,NUMERIC,Yes,Share of orders with known actual delivery timestamps that were delivered late.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,22,average_delivery_lead_days,NUMERIC,Yes,Mean purchase-to-delivery duration among orders with actual delivery timestamps.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,23,favorite_category_id,TEXT,Yes,Category with the shopper’s highest merchandise value; item count and category ID break ties.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,24,favorite_payment_type,TEXT,Yes,Payment type with the shopper’s highest total payment value.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,25,repeat_customer_flag,BOOLEAN,No,1 when the customer_unique_id placed more than one order.
+model_ready/customer_features.csv,customer_features,One row per customer_unique_id with transparent RFM/behavior features.,26,location_changed_flag,BOOLEAN,No,1 when more than one customer location was observed for the shopper.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",1,order_id,TEXT,No,Anonymized order identifier.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",2,order_item_id,INTEGER,No,Item sequence number within an order; together with order_id forms the primary key.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",3,order_purchase_timestamp,TIMESTAMP,No,Date and time at which the order was placed.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",4,order_date_id,INTEGER,No,Date dimension key derived from order_purchase_timestamp.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",5,order_status,TEXT,No,Order lifecycle status recorded by the source.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",6,customer_id,TEXT,No,Order-scoped anonymized customer key used by the source and orders table.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",7,customer_unique_id,TEXT,No,Stable anonymized shopper key that links repeat purchases.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",8,customer_order_sequence,INTEGER,No,Chronological purchase sequence for the customer_unique_id.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",9,customer_city,TEXT,No,"Customer city from the source, Unicode/whitespace normalized only."
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",10,customer_state,TEXT,No,Two-letter customer federation unit abbreviation.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",11,customer_macroregion,TEXT,No,English Brazilian macroregion for the customer state.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",12,seller_id,TEXT,No,Anonymized seller identifier.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",13,seller_city,TEXT,No,"Seller city from the source, Unicode/whitespace normalized only."
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",14,seller_state,TEXT,No,Two-letter seller federation unit abbreviation.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",15,seller_macroregion,TEXT,No,English Brazilian macroregion for the seller state.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",16,product_id,TEXT,No,Anonymized product identifier.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",17,category_id,TEXT,No,Product category key. __unknown__ denotes a missing source category.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",18,product_category_name_pt,TEXT,No,"Portuguese category attached to the product, with unknown for source nulls."
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",19,product_category_name_en,TEXT,No,English source translation where available; otherwise a documented source-label fallback.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",20,source_category_missing_flag,BOOLEAN,No,1 when the source product category was blank.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",21,product_name_length,INTEGER,Yes,Character length of the anonymized product name recorded by the source.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",22,product_description_length,INTEGER,Yes,Character length of the product description recorded by the source.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",23,product_photos_qty,INTEGER,Yes,Number of product photos recorded by the source.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",24,product_weight_g,NUMERIC,Yes,Product weight in grams.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",25,product_length_cm,NUMERIC,Yes,Product package length in centimeters.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",26,product_height_cm,NUMERIC,Yes,Product package height in centimeters.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",27,product_width_cm,NUMERIC,Yes,Product package width in centimeters.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",28,product_volume_cm3,NUMERIC,Yes,Derived package volume: length × height × width in cubic centimeters.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",29,shipping_limit_timestamp,TIMESTAMP,No,Seller shipping deadline recorded by the source.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",30,quantity,INTEGER,No,Constant 1 because each source order-item row represents one item occurrence.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",31,unit_price,"NUMERIC(14,2)",No,Source item price excluding freight.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",32,line_freight_value,"NUMERIC(14,2)",No,Freight assigned to this item row in the flattened table.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",33,line_merchandise_value,"NUMERIC(14,2)",No,Item merchandise value excluding freight; equal to unit_price because quantity=1.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",34,line_total_value,"NUMERIC(14,2)",No,Item merchandise value plus item freight charge.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",35,order_item_count_in_order,INTEGER,No,Order-level item count repeated at item grain.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",36,order_distinct_product_count,INTEGER,No,"Distinct product count for the order, repeated at item grain."
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",37,order_distinct_seller_count,INTEGER,No,"Distinct seller count for the order, repeated at item grain."
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",38,order_merchandise_value,"NUMERIC(14,2)",No,Order-level merchandise value repeated at item grain; do not sum without deduplicating orders.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",39,order_freight_value,"NUMERIC(14,2)",No,Order-level freight value repeated at item grain; do not sum without deduplicating orders.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",40,order_line_total_value,"NUMERIC(14,2)",No,Order merchandise plus freight summed from item rows.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",41,order_payment_value,"NUMERIC(14,2)",Yes,Order-level payment value repeated at item grain; do not sum without deduplicating orders.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",42,primary_payment_type,TEXT,Yes,Payment type from the highest-value payment row; sequence breaks ties.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",43,max_payment_installments,INTEGER,Yes,Largest installment count across the order payment rows.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",44,average_review_score,NUMERIC,Yes,Mean review score for the order or aggregate grain.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",45,latest_review_score,INTEGER,Yes,Score from the review row with the latest answer timestamp.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",46,purchase_to_delivery_days,NUMERIC,Yes,Days from purchase to actual customer delivery.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",47,delivery_vs_estimate_days,NUMERIC,Yes,Signed actual-delivery minus estimated-delivery difference in days; positive means late.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",48,delivered_late_flag,BOOLEAN,Yes,1 when actual delivery occurred after the estimated delivery timestamp.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",49,chronology_anomaly_flag,BOOLEAN,No,1 when carrier handoff precedes purchase or delivery precedes carrier handoff.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",50,payment_reconciliation_difference,"NUMERIC(14,2)",Yes,Order payment value minus item merchandise-plus-freight total.
+model_ready/order_items_flat.csv,order_items_flat,"One row per order item with joined customer, seller, product, order, payment, and review context.",51,payment_reconciled_flag,BOOLEAN,Yes,1 when the absolute payment reconciliation difference is at most 0.02.

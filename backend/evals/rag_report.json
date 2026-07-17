@@ -1,0 +1,459 @@
+{
+  "suite": "rag",
+  "graded": 40,
+  "table_recall": 0.8525,
+  "questions_fully_grounded": 31,
+  "full_coverage_rate": 0.775,
+  "details": [
+    {
+      "eval_id": "T2S-001",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-002",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-003",
+      "expected": [
+        "order_items"
+      ],
+      "covered": [
+        "order_items"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-004",
+      "expected": [
+        "order_items"
+      ],
+      "covered": [
+        "order_items"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-005",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-006",
+      "expected": [
+        "payments"
+      ],
+      "covered": [
+        "payments"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-007",
+      "expected": [
+        "orders",
+        "regions"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": [
+        "regions"
+      ]
+    },
+    {
+      "eval_id": "T2S-008",
+      "expected": [
+        "categories",
+        "order_items",
+        "products"
+      ],
+      "covered": [
+        "categories",
+        "order_items",
+        "products"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-009",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-010",
+      "expected": [
+        "customer_features"
+      ],
+      "covered": [
+        "customer_features"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-011",
+      "expected": [
+        "monthly_kpis"
+      ],
+      "covered": [
+        "monthly_kpis"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-012",
+      "expected": [
+        "monthly_kpis"
+      ],
+      "covered": [
+        "monthly_kpis"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-013",
+      "expected": [
+        "categories",
+        "order_items",
+        "products"
+      ],
+      "covered": [
+        "categories",
+        "order_items"
+      ],
+      "missed": [
+        "products"
+      ]
+    },
+    {
+      "eval_id": "T2S-014",
+      "expected": [
+        "order_items",
+        "sellers"
+      ],
+      "covered": [
+        "order_items",
+        "sellers"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-015",
+      "expected": [
+        "orders",
+        "regions"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": [
+        "regions"
+      ]
+    },
+    {
+      "eval_id": "T2S-016",
+      "expected": [
+        "orders",
+        "regions"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": [
+        "regions"
+      ]
+    },
+    {
+      "eval_id": "T2S-017",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-018",
+      "expected": [
+        "monthly_kpis"
+      ],
+      "covered": [
+        "monthly_kpis"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-019",
+      "expected": [
+        "order_items"
+      ],
+      "covered": [
+        "order_items"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-020",
+      "expected": [
+        "orders",
+        "regions"
+      ],
+      "covered": [
+        "orders",
+        "regions"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-021",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-022",
+      "expected": [
+        "payments"
+      ],
+      "covered": [
+        "payments"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-023",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-024",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-025",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-026",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-027",
+      "expected": [
+        "categories",
+        "order_items",
+        "products"
+      ],
+      "covered": [
+        "categories",
+        "order_items"
+      ],
+      "missed": [
+        "products"
+      ]
+    },
+    {
+      "eval_id": "T2S-028",
+      "expected": [
+        "categories",
+        "order_items",
+        "orders",
+        "products"
+      ],
+      "covered": [
+        "categories",
+        "order_items",
+        "orders",
+        "products"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-029",
+      "expected": [
+        "orders",
+        "regions"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": [
+        "regions"
+      ]
+    },
+    {
+      "eval_id": "T2S-030",
+      "expected": [
+        "order_items_flat"
+      ],
+      "covered": [],
+      "missed": [
+        "order_items_flat"
+      ]
+    },
+    {
+      "eval_id": "T2S-031",
+      "expected": [
+        "dates",
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": [
+        "dates"
+      ]
+    },
+    {
+      "eval_id": "T2S-032",
+      "expected": [
+        "customer_features"
+      ],
+      "covered": [
+        "customer_features"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-033",
+      "expected": [
+        "customers",
+        "orders"
+      ],
+      "covered": [
+        "customers",
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-034",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-035",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-036",
+      "expected": [
+        "customer_features"
+      ],
+      "covered": [
+        "customer_features"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-037",
+      "expected": [
+        "order_items",
+        "products"
+      ],
+      "covered": [
+        "order_items",
+        "products"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-038",
+      "expected": [
+        "orders"
+      ],
+      "covered": [
+        "orders"
+      ],
+      "missed": []
+    },
+    {
+      "eval_id": "T2S-039",
+      "expected": [
+        "categories",
+        "order_items",
+        "orders",
+        "products"
+      ],
+      "covered": [
+        "categories",
+        "order_items",
+        "orders"
+      ],
+      "missed": [
+        "products"
+      ]
+    },
+    {
+      "eval_id": "T2S-040",
+      "expected": [
+        "monthly_kpis"
+      ],
+      "covered": [
+        "monthly_kpis"
+      ],
+      "missed": []
+    }
+  ]
+}

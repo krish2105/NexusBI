@@ -1,0 +1,250 @@
+{
+  "suite": "text2sql",
+  "total": 39,
+  "data_integrity_pass": 39,
+  "data_integrity_rate": 1.0,
+  "nexus_generator_pass": 19,
+  "nexus_generator_execution_accuracy": 0.4872,
+  "note": "Data-integrity runs the package's validated SQL and checks row counts against the labeled expectation. Generator accuracy runs Nexus's own generated SQL (zero-key deterministic engine) and compares result value-sets; a Groq/Ollama key raises coverage.",
+  "details": [
+    {
+      "eval_id": "T2S-001",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-002",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-003",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-004",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-005",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-006",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-007",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-008",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-009",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-010",
+      "difficulty": "easy",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-011",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-012",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-013",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-014",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-015",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-016",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-017",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-018",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-019",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-020",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": true
+    },
+    {
+      "eval_id": "T2S-021",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-022",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-023",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-024",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-025",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-026",
+      "difficulty": "medium",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-027",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-028",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-029",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-030",
+      "integrity": false,
+      "error": "no such table: order_items_flat"
+    },
+    {
+      "eval_id": "T2S-031",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-032",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-033",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-034",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-035",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-036",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-037",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-038",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-039",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": false
+    },
+    {
+      "eval_id": "T2S-040",
+      "difficulty": "hard",
+      "integrity": true,
+      "nexus_generator": true
+    }
+  ]
+}

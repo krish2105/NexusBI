@@ -1,0 +1,105 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --font-inter: "Inter", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, monospace;
+}
+
+html {
+  background: #0b0d12;
+  color-scheme: dark;
+}
+body {
+  background: #0b0d12;
+  color: #e7eaf0;
+  font-feature-settings: "cv11", "ss01";
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Lenis smooth scroll */
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+::selection {
+  background: rgba(99, 102, 241, 0.35);
+}
+
+/* Surgical glassmorphism — nav, query bar, insight cards only */
+.glass {
+  background: rgba(20, 23, 31, 0.6);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.gradient-text {
+  background: linear-gradient(135deg, #a5b4fc 0%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.card {
+  background: #14171f;
+  border: 1px solid #242a38;
+  border-radius: 16px;
+  box-shadow: 0 12px 40px -16px rgba(0, 0, 0, 0.6);
+}
+
+.gradient-border {
+  position: relative;
+}
+.gradient-border::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(34, 211, 238, 0.4));
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+}
+.gradient-border:hover::before {
+  opacity: 1;
+}
+
+/* Custom scrollbar */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-thumb {
+  background: #242a38;
+  border-radius: 8px;
+  border: 2px solid #0b0d12;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: #2f3648;
+}
+
+.focus-ring:focus-visible {
+  outline: 2px solid #6366f1;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

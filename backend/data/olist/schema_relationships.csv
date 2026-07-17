@@ -1,0 +1,16 @@
+from_file,from_column,to_file,to_column,relationship,notes
+supplementary/geolocation.csv,region_id,core/regions.csv,region_id,many-to-one,Source geolocation state to federation unit.
+derived/geolocation_zip_summary.csv,region_id,core/regions.csv,region_id,many-to-one,Postal-prefix/state summary to federation unit.
+core/customers.csv,region_id,core/regions.csv,region_id,many-to-one,Customer state to federation unit.
+core/sellers.csv,region_id,core/regions.csv,region_id,many-to-one,Seller state to federation unit.
+core/products.csv,category_id,core/categories.csv,category_id,many-to-one,Product to category.
+core/orders.csv,customer_id,core/customers.csv,customer_id,one-to-one in this release,Source customer_id is order-scoped.
+core/orders.csv,region_id,core/regions.csv,region_id,many-to-one,Order inherits customer state.
+core/orders.csv,order_date_id,core/dates.csv,date_id,many-to-one,Purchase date.
+core/order_items.csv,order_id,core/orders.csv,order_id,many-to-one,Order item to order.
+core/order_items.csv,product_id,core/products.csv,product_id,many-to-one,Order item to product.
+core/order_items.csv,seller_id,core/sellers.csv,seller_id,many-to-one,Order item to seller.
+core/order_items.csv,shipping_limit_date_id,core/dates.csv,date_id,many-to-one,Shipping deadline date.
+supplementary/payments.csv,order_id,core/orders.csv,order_id,many-to-one,Payment row to order.
+supplementary/reviews.csv,order_id,core/orders.csv,order_id,many-to-one,Review row to order.
+supplementary/reviews.csv,review_creation_date_id,core/dates.csv,date_id,many-to-one,Review creation date.

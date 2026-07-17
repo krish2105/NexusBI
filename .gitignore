@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+*.egg-info/
+.pytest_cache/
+
+# Nexus runtime
+backend/var/
+backend/.env
+*.db
+*.db-wal
+*.db-shm
+
+# Node / Next
+node_modules/
+.next/
+frontend/.env
+frontend/out/
+
+# Large source CSVs not used by the SQLite demo (see data/olist/DATA_NOTE.md)
+backend/data/olist/supplementary/geolocation.csv
+backend/data/olist/model_ready/order_items_flat.csv
+
+# OS / editor
+.DS_Store
+.idea/
+.vscode/

@@ -1,0 +1,46 @@
+# Nexus BI — local stack.
+#
+# The default zero-infra path needs NONE of this (SQLite demo + deterministic
+# engine). This compose file provisions the PRODUCTION Postgres path: an app DB
+# with pgvector and a separate read-only target/demo DB, matching the two-DB
+# separation in the architecture. Load the demo data with the package's
+# load_postgres.sql + read_only_role.sql, then point DEMO_TARGET_URL at it.
+services:
+  app-db: # metadata: connections, history, dashboards, audit, RAG vectors
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: nexus
+      POSTGRES_DB: nexus_app
+    ports: ["5433:5432"]
+    volumes: ["appdb:/var/lib/postgresql/data"]
+
+  demo-db: # the analyzed target DB (load the Olist package here)
+    image: postgres:16
+    environment:
+      POSTGRES_USER: nexus
+      POSTGRES_PASSWORD: nexus
+      POSTGRES_DB: nexus_demo
+    ports: ["5434:5432"]
+    volumes: ["demodb:/var/lib/postgresql/data"]
+
+  backend:
+    build: ./backend
+    depends_on: [app-db, demo-db]
+    environment:
+      ENVIRONMENT: local
+      APP_DB_URL: postgresql://nexus:nexus@app-db:5432/nexus_app
+      # Use a read-only role in production; see data/olist/read_only_role.sql
+      DEMO_TARGET_URL: postgresql://nexus:nexus@demo-db:5432/nexus_demo
+    ports: ["8000:8000"]
+
+  frontend:
+    build: ./frontend
+    depends_on: [backend]
+    environment:
+      NEXT_PUBLIC_API_URL: http://localhost:8000
+    ports: ["3000:3000"]
+
+volumes:
+  appdb:
+  demodb:

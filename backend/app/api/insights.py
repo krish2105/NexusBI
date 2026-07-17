@@ -6,7 +6,9 @@ from pydantic import BaseModel
 
 from app.api.deps import (authorize_connection, get_current_user,
                           resolve_connection_url)
+from app.core.tracing import is_enabled as tracing_enabled
 from app.db.app_store import get_store
+from app.llm.client import get_llm
 from app.ml.segmentation import segment_customers
 
 router = APIRouter(tags=["insights"])
@@ -82,6 +84,10 @@ def trust_summary():
             "queries_executed": executed,
             "queries_blocked": blocked,
             "audit_entries": len(audit),
+        },
+        "observability": {
+            "tracing_enabled": tracing_enabled(),
+            "llm_provider": get_llm().provider,
         },
         "feedback": store.feedback_stats(),
         "principles": [

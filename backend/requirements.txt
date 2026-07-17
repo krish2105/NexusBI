@@ -25,9 +25,10 @@ langchain-core>=0.3
 pytest>=8.0
 httpx>=0.27              # FastAPI TestClient
 
+groq>=0.11                # free-tier hosted LLM (Tier 1: LLM path)
+langfuse>=2.60            # free-tier tracing (Tier 1: observability)
+
 # --- Optional upgrades (uncomment as needed; all free) ---
-# groq>=0.11             # free-tier hosted LLM
 # sentence-transformers>=2.7   # local bge-small embeddings (no API key)
 # psycopg2-binary>=2.9   # Postgres production target/app DB
 # statsforecast>=1.7     # AutoARIMA forecasting
-# langfuse>=2.0          # free-tier tracing

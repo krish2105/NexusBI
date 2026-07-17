@@ -44,6 +44,7 @@ export interface AnalysisResult {
   assumptions: string[];
   validation_errors: string[];
   error: string | null;
+  trace_url: string | null;
 }
 
 export interface AgentEvent {

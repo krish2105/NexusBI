@@ -8,7 +8,7 @@ Agentic Decision Intelligence · five-layer text-to-SQL safety · hybrid-RAG sch
 
 [![CI](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml/badge.svg)](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml)
 ![safety](https://img.shields.io/badge/adversarial%20queries%20blocked-100%25-34D399)
-![tests](https://img.shields.io/badge/backend%20tests-76%20passing-6366F1)
+![tests](https://img.shields.io/badge/backend%20tests-85%20passing-6366F1)
 ![free tier](https://img.shields.io/badge/API%20keys-0%20required-22D3EE)
 ![license](https://img.shields.io/badge/data-CC%20BY--NC--SA%204.0-9BA3B4)
 
@@ -40,7 +40,7 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 | **Text-to-SQL** | 100% data-integrity; ~49% zero-key generator execution accuracy (higher with a Groq key) |
 | **Forecast** | Holt-Winters backtest, MAPE on a 3-month holdout |
 | **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `76 passed` — safety rules, read-only enforcement, graph, API, hardening |
+| **Tests** | `85 passed` — safety rules, read-only enforcement, graph, API, hardening |
 | **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres
@@ -72,9 +72,13 @@ Open **http://localhost:3000/app**, click an example chip, and watch the agent b
 See **[`docs/DEMO.md`](docs/DEMO.md)** for a 90-second walkthrough script.
 
 ### Upgrades (all optional, all free)
-- **General LLM:** set `GROQ_API_KEY` (free at console.groq.com) — the SQL generator and narrator switch to `llama-3.3-70b`. Or run **Ollama** locally.
+- **General LLM:** set `GROQ_API_KEY` (free at console.groq.com) — the SQL generator and narrator switch to `llama-3.3-70b`. Or run **Ollama** locally. Re-run `python -m evals.run_evals` with the key set to see the accuracy lift over the zero-key baseline, broken down by question difficulty.
+- **Observability:** set `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` (free at cloud.langfuse.com) — every query gets a full trace with a child span per agent node (latency, generator used, safety verdict). No-op with zero overhead when unset.
 - **Production Postgres:** `docker compose up -d`, load the data package's `load_postgres.sql` + `read_only_role.sql` into `demo-db`, and set `DEMO_TARGET_URL` to the read-only DSN.
 - **Local embeddings:** `pip install sentence-transformers` and set `USE_EMBEDDINGS=true`.
+
+### Deploy live
+See **[`docs/DEPLOY.md`](docs/DEPLOY.md)** for the full runbook: Groq + Langfuse setup, Render backend deploy (from the included `render.yaml` blueprint, Docker-verified locally), and Vercel frontend deploy — ~20 minutes end to end.
 
 ## Architecture (short version)
 
@@ -93,11 +97,13 @@ Two databases, kept strictly separate. The LLM only plans and narrates — the d
 - **[`docs/SECURITY.md`](docs/SECURITY.md)** — threat model + platform hardening (SSRF, DSN encryption, tenant isolation, rate limits)
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — agent graph + two-DB separation
 - **[`docs/DEMO.md`](docs/DEMO.md)** — 90-second walkthrough script
+- **[`docs/DEPLOY.md`](docs/DEPLOY.md)** — go-live runbook (Groq, Langfuse, Render, Vercel)
 - **[`docs/VIVA.md`](docs/VIVA.md)** — interview Q&A
 
 ## Deploy
-- **Backend → Render** (Docker): `render.yaml` included. Note free-tier cold starts.
-- **Frontend → Vercel** (zero-config): set `NEXT_PUBLIC_API_URL` to the Render URL.
+- **Backend → Render** (Docker): `render.yaml` included and Docker-build-verified locally (image builds, seeds the real data, and serves `/health` + a real query correctly). Note free-tier cold starts.
+- **Frontend → Vercel** (zero-config): set `NEXT_PUBLIC_API_URL` to the Render URL; the frontend calls the backend directly with CORS (not proxied) so SSE streams reliably in production — verified end-to-end in-browser against a live cross-origin backend.
+- Full steps: [`docs/DEPLOY.md`](docs/DEPLOY.md).
 
 ## Stack
 FastAPI · sqlglot · LangGraph-style graph · statsmodels · scikit-learn · Groq/Ollama (optional) · Next.js 14 · Motion · Lenis · Recharts · Tailwind.

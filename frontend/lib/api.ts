@@ -1,7 +1,17 @@
 import type { AgentEvent, AnalysisResult } from "./types";
 
-const API = process.env.NEXT_PUBLIC_API_URL ? "" : ""; // rewrites proxy /api/* -> backend
-const BASE = "/api";
+// Local dev: same-origin "/api/*" proxied to the backend via next.config.mjs
+// rewrites (no CORS needed, works out of the box with `npm run dev`).
+//
+// Production (frontend on Vercel, backend on Render): call the backend
+// DIRECTLY from the browser using NEXT_PUBLIC_API_URL, with the backend's
+// CORS_ORIGINS allowing the Vercel domain. This is deliberate — proxying an
+// SSE stream through a serverless rewrite to an external origin is not a
+// guaranteed-reliable pattern across hosts, whereas a direct CORS'd fetch to
+// the backend streams exactly as it does in local dev.
+const BASE = process.env.NEXT_PUBLIC_API_URL
+  ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")
+  : "/api";
 
 export async function submitQuery(question: string, connectionId = "demo") {
   const r = await fetch(`${BASE}/query`, {

@@ -8,6 +8,7 @@ import {
   ThumbsUp,
   CheckCircle2,
   XCircle,
+  Activity,
 } from "lucide-react";
 import { getTrust } from "@/lib/api";
 
@@ -30,6 +31,7 @@ export default function Trust() {
   const acc = t.accuracy || {};
   const gov = t.governance || {};
   const fb = t.feedback || {};
+  const obs = t.observability || {};
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-20 pt-28">
@@ -83,6 +85,15 @@ export default function Trust() {
             {fb.total > 0
               ? `${Math.round((fb.satisfaction_rate || 0) * 100)}% satisfaction across ${fb.total} ratings`
               : "No feedback yet — rate answers in the workspace."}
+          </div>
+          <div className="mt-2 flex items-center gap-2 rounded-lg border border-line bg-surface/50 px-3 py-2 text-xs text-ink-dim">
+            <Activity className={`h-4 w-4 ${obs.tracing_enabled ? "text-pos" : "text-ink-faint"}`} />
+            {obs.tracing_enabled
+              ? "Full observability — every query traced (Langfuse)"
+              : "Tracing off — set LANGFUSE_* keys to enable full observability"}
+            <span className="ml-auto rounded-full border border-line px-2 py-0.5 text-[10px] uppercase text-ink-faint">
+              engine: {obs.llm_provider || "deterministic"}
+            </span>
           </div>
         </motion.div>
       </section>

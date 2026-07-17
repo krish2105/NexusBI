@@ -1,6 +1,6 @@
 "use client";
 import { motion } from "motion/react";
-import { Database, Clock, ShieldAlert, Pin } from "lucide-react";
+import { Database, Clock, ShieldAlert, Pin, Activity } from "lucide-react";
 import type { AnalysisResult } from "@/lib/types";
 import AutoChart from "./AutoChart";
 import SqlBlock from "./SqlBlock";
@@ -61,6 +61,16 @@ export default function ResultCanvas({
             <span className="rounded-full border border-line px-2 py-0.5">
               engine: {result.generator}
             </span>
+            {result.trace_url && (
+              <a
+                href={result.trace_url}
+                target="_blank"
+                rel="noreferrer"
+                className="focus-ring flex items-center gap-1 rounded-full border border-line px-2 py-0.5 hover:border-indigo/40 hover:text-ink"
+              >
+                <Activity className="h-3 w-3" /> View trace
+              </a>
+            )}
           </div>
           {onPin && (
             <button

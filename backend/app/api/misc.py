@@ -6,6 +6,7 @@ import json
 from fastapi import APIRouter
 
 from app.config import settings
+from app.core.tracing import is_enabled as tracing_enabled
 from app.db.app_store import get_store
 from app.llm.client import get_llm
 
@@ -41,4 +42,5 @@ def health():
     llm = get_llm()
     return {"status": "ok", "app": settings.app_name,
             "llm_provider": llm.provider, "demo_target": settings.demo_target_url,
-            "safety": "5-layer text-to-SQL guard active"}
+            "safety": "5-layer text-to-SQL guard active",
+            "tracing": "langfuse (on)" if tracing_enabled() else "off"}

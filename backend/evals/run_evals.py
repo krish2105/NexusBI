@@ -99,12 +99,18 @@ def eval_safety() -> dict:
 
 # ---------------------------------------------------------------- text2sql
 def eval_text2sql() -> dict:
+    from app.llm.client import get_llm
+
+    generator_mode = get_llm().provider  # "deterministic" | "groq" | "ollama"
     pool = TargetPool()
     rows = list(csv.DictReader(open(DATA / "evals" / "text2sql_eval.csv")))
     integrity_pass = gen_pass = counted = 0
+    by_difficulty: dict[str, dict[str, int]] = {}
     details = []
     for c in rows:
         vsql = c["validated_sql"]
+        diff = c["difficulty"]
+        by_difficulty.setdefault(diff, {"pass": 0, "total": 0})
         try:
             truth = pool.execute(vsql)
             expected_n = int(c["expected_row_count"])
@@ -120,23 +126,34 @@ def eval_text2sql() -> dict:
             res = run_analysis_collect(c["question"], persist=False)
             gen_ok = (not res["blocked"]
                       and _answers_match(res["rows"], truth.rows))
+            gen_used = res.get("generator")
         except Exception:  # noqa: BLE001
-            gen_ok = False
+            gen_ok, gen_used = False, None
         gen_pass += int(gen_ok)
         counted += 1
-        details.append({"eval_id": c["eval_id"], "difficulty": c["difficulty"],
-                        "integrity": integ, "nexus_generator": gen_ok})
+        by_difficulty[diff]["total"] += 1
+        by_difficulty[diff]["pass"] += int(gen_ok)
+        details.append({"eval_id": c["eval_id"], "difficulty": diff,
+                        "integrity": integ, "nexus_generator": gen_ok,
+                        "generator_used": gen_used})
+
+    by_difficulty_rates = {
+        d: round(v["pass"] / v["total"], 4) if v["total"] else None
+        for d, v in by_difficulty.items()
+    }
     return {
         "suite": "text2sql",
+        "generator_mode": generator_mode,
         "total": counted,
         "data_integrity_pass": integrity_pass,
         "data_integrity_rate": round(integrity_pass / counted, 4) if counted else None,
         "nexus_generator_pass": gen_pass,
         "nexus_generator_execution_accuracy": round(gen_pass / counted, 4) if counted else None,
+        "accuracy_by_difficulty": by_difficulty_rates,
         "note": ("Data-integrity runs the package's validated SQL and checks row "
                  "counts against the labeled expectation. Generator accuracy runs "
-                 "Nexus's own generated SQL (zero-key deterministic engine) and "
-                 "compares result value-sets; a Groq/Ollama key raises coverage."),
+                 f"Nexus's own generated SQL (generator_mode={generator_mode}) and "
+                 "compares result value-sets on their shared columns."),
         "details": details,
     }
 
@@ -218,16 +235,38 @@ def main(gate: bool = False) -> None:
     t = reports["text2sql_report.json"]
     f = reports["forecast_report.json"]
     r = reports["rag_report.json"]
+
+    # Keep a standing zero-key baseline, and a separate LLM-mode snapshot, so an
+    # upgrade to Groq/Ollama is always comparable against the free-tier default.
+    mode = t.get("generator_mode", "deterministic")
+    baseline_path = OUT / "text2sql_report_baseline.json"
+    if mode == "deterministic":
+        baseline_path.write_text(json.dumps(t, indent=2))
+    else:
+        (OUT / "text2sql_report_llm.json").write_text(json.dumps(t, indent=2))
+
     print("=" * 60)
     print("NEXUS BI — EVALUATION SUMMARY")
     print("=" * 60)
     print(f"SAFETY    : {s['adversarial_blocked']}/{s['adversarial_total']} "
           f"adversarial blocked ({s['block_rate']*100:.0f}%), "
           f"control allowed={s['control_allowed']}")
-    print(f"TEXT2SQL  : data integrity {t['data_integrity_pass']}/{t['total']} "
+    print(f"TEXT2SQL  : [{mode}] data integrity {t['data_integrity_pass']}/{t['total']} "
           f"({t['data_integrity_rate']*100:.0f}%); "
           f"Nexus generator {t['nexus_generator_pass']}/{t['total']} "
           f"({t['nexus_generator_execution_accuracy']*100:.0f}%)")
+    if t.get("accuracy_by_difficulty"):
+        by_d = ", ".join(f"{d}={round(v*100)}%" if v is not None else f"{d}=—"
+                         for d, v in t["accuracy_by_difficulty"].items())
+        print(f"            by difficulty: {by_d}")
+    if mode != "deterministic" and baseline_path.exists():
+        base = json.loads(baseline_path.read_text())
+        b_acc = base.get("nexus_generator_execution_accuracy")
+        m_acc = t.get("nexus_generator_execution_accuracy")
+        if b_acc is not None and m_acc is not None:
+            delta = (m_acc - b_acc) * 100
+            print(f"            vs zero-key baseline ({round(b_acc*100)}%): "
+                 f"{'+' if delta >= 0 else ''}{delta:.0f} points")
     print(f"FORECAST  : {f.get('method')} MAPE={f.get('MAPE_pct')}% "
           f"RMSE={f.get('RMSE')}")
     print(f"RAG       : table recall {r['table_recall']*100:.0f}%, "

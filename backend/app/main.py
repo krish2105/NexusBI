@@ -11,6 +11,8 @@ from fastapi.responses import JSONResponse
 from app.api import (auth, connections, dashboards, insights, misc, monitors,
                      query, uploads)
 from app.config import settings
+from app.core.tracing import flush as flush_traces
+from app.core.tracing import is_enabled as tracing_enabled
 from app.db.app_store import get_store
 from app.db.seed_demo import seed_sqlite
 
@@ -28,8 +30,10 @@ async def lifespan(app: FastAPI):
         except Exception as e:  # noqa: BLE001
             log.warning(f"demo seed skipped: {e}")
     get_store()  # init app schema
-    log.info(f"Nexus BI ready — LLM provider resolved, 5-layer SQL guard active")
+    log.info(f"Nexus BI ready — LLM provider resolved, 5-layer SQL guard active, "
+             f"tracing={'on' if tracing_enabled() else 'off'}")
     yield
+    flush_traces()  # send any pending trace batches before the process exits
 
 
 app = FastAPI(

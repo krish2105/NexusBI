@@ -20,6 +20,7 @@ from app.agents.planner import plan_question
 from app.agents.sql_generator import generate_sql, repair_sql
 from app.agents.state import AnalysisState
 from app.config import settings
+from app.core.tracing import QueryTrace
 from app.db.app_store import get_store
 from app.db.introspect import cached_allow_list
 from app.db.target_pool import ReadOnlyExecutionError, TargetPool
@@ -53,8 +54,29 @@ def run_analysis(question: str, connection_id: str = "demo",
         "question": question, "repair_attempts": 0, "assumptions": [], "events": [],
     }
 
+    # Optional observability: no-ops entirely when LANGFUSE_* keys are unset.
+    trace = QueryTrace(qid, question, connection_id)
+    node_spans: dict[str, object] = {}
+
     def emit(ev: dict) -> dict:
         state["events"].append(ev)
+        node, status = ev.get("node"), ev.get("status")
+        if status == "running":
+            meta = {k: v for k, v in ev.items() if k not in ("node", "status", "ts")}
+            node_spans[node] = trace.node_span(node, **meta)
+        elif node in node_spans:
+            span = node_spans.pop(node)
+            out = {k: v for k, v in ev.items()
+                   if k not in ("node", "status", "ts", "preview")}
+            level = "ERROR" if status == "blocked" else None
+            span.update(output=out, level=level)
+            span.end()
+        if node == "final":
+            result = ev.get("result", {})
+            trace.finish(output={"blocked": result.get("blocked"),
+                                 "confidence": result.get("confidence"),
+                                 "generator": result.get("generator")})
+            result["trace_url"] = trace.url()
         return ev
 
     yield emit(_event("start", "ok", query_id=qid, question=question))
@@ -104,6 +126,7 @@ def run_analysis(question: str, connection_id: str = "demo",
                       glossary=[g.term for g in schema.glossary]))
 
     # --- generate -> validate -> (repair loop) ---
+    yield emit(_event("sql_generator", "running", label="Writing SQL"))
     gen = generate_sql(question, schema, plan)
     state["generator"] = gen["generator"]
     report = None
@@ -244,6 +267,7 @@ def _finalize(state: AnalysisState, blocked: bool, message: str | None = None) -
         "assumptions": state.get("assumptions", []),
         "validation_errors": state.get("validation_errors", []),
         "error": state.get("error"),
+        "trace_url": None,
     }
     return _event("final", "blocked" if blocked else "ok", result=result)
 

@@ -313,6 +313,24 @@ Rules you must never break:
 Return ONLY the SQL, no prose, no markdown fences."""
 
 
+def _vetted_examples_block(limit: int = 3) -> str:
+    """Few-shot (question -> SQL) pairs verified via 👍 feedback. Closes the loop:
+    answers users approved make future generation better."""
+    try:
+        from app.db.app_store import get_store
+
+        ex = get_store().vetted_examples(limit)
+    except Exception:  # noqa: BLE001 - never break generation on this
+        ex = []
+    if not ex:
+        return ""
+    lines = ["\n# VERIFIED EXAMPLES (approved by users — follow their style)"]
+    for e in ex:
+        if e.get("sql"):
+            lines.append(f"Q: {e['question']}\nSQL: {e['sql']}")
+    return "\n".join(lines)
+
+
 def _extract_sql(text: str) -> str:
     text = re.sub(r"```(?:sql)?", "", text, flags=re.I).strip("` \n")
     # take up to first semicolon / end
@@ -325,7 +343,8 @@ def generate_sql(question: str, schema: RetrievedSchema,
     llm = get_llm()
 
     if llm.is_llm:  # pragma: no cover - requires a provider
-        user = (f"{schema.prompt_block()}\n\n# QUESTION\n{question}\n\n"
+        few_shot = _vetted_examples_block()
+        user = (f"{schema.prompt_block()}\n{few_shot}\n\n# QUESTION\n{question}\n\n"
                 f"# INTENT (advisory)\n{plan.get('intent_summary','')}\n\nSQL:")
         try:
             resp = llm.complete(_SYSTEM, user, temperature=0.0)

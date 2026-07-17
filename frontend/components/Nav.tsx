@@ -7,7 +7,10 @@ import { Sparkles } from "lucide-react";
 const LINKS = [
   { href: "/app", label: "Workspace" },
   { href: "/dashboards", label: "Dashboards" },
-  { href: "/connections", label: "Connections" },
+  { href: "/segments", label: "Segments" },
+  { href: "/monitors", label: "Monitors" },
+  { href: "/trust", label: "Trust" },
+  { href: "/connections", label: "Data" },
   { href: "/history", label: "History" },
 ];
 

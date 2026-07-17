@@ -1,10 +1,17 @@
 "use client";
+import { useState } from "react";
 import { motion } from "motion/react";
-import { AlertTriangle, Lightbulb, TrendingUp } from "lucide-react";
+import { AlertTriangle, Lightbulb, TrendingUp, ThumbsUp, ThumbsDown } from "lucide-react";
 import type { AnalysisResult } from "@/lib/types";
+import { sendFeedback } from "@/lib/api";
 import ConfidenceGauge from "./ConfidenceGauge";
 
 export default function InsightCard({ result }: { result: AnalysisResult }) {
+  const [rated, setRated] = useState<"up" | "down" | null>(null);
+  const rate = (r: "up" | "down") => {
+    setRated(r);
+    sendFeedback(result.query_id, r).catch(() => {});
+  };
   return (
     <motion.div
       initial={{ opacity: 0, y: 12 }}
@@ -36,6 +43,29 @@ export default function InsightCard({ result }: { result: AnalysisResult }) {
             {result.anomalies.length} anomaly point(s)
           </div>
         )}
+        <div className="flex items-center gap-1.5">
+          {rated ? (
+            <span className="text-xs text-pos">Thanks — feedback saved</span>
+          ) : (
+            <>
+              <span className="mr-1 text-xs text-ink-faint">Helpful?</span>
+              <button
+                onClick={() => rate("up")}
+                aria-label="Helpful"
+                className="focus-ring rounded-lg border border-line p-1.5 text-ink-dim hover:border-pos/40 hover:text-pos"
+              >
+                <ThumbsUp className="h-3.5 w-3.5" />
+              </button>
+              <button
+                onClick={() => rate("down")}
+                aria-label="Not helpful"
+                className="focus-ring rounded-lg border border-line p-1.5 text-ink-dim hover:border-neg/40 hover:text-neg"
+              >
+                <ThumbsDown className="h-3.5 w-3.5" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {result.assumptions.length > 0 && (

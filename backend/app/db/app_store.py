@@ -51,6 +51,20 @@ CREATE TABLE IF NOT EXISTS audit_log (
   row_count INTEGER, latency_ms REAL, verdict TEXT, detail TEXT,
   created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS feedback (
+  id TEXT PRIMARY KEY, query_id TEXT NOT NULL, connection_id TEXT,
+  question TEXT, sql TEXT, rating TEXT NOT NULL, note TEXT, created_at REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS monitors (
+  id TEXT PRIMARY KEY, name TEXT NOT NULL, question TEXT NOT NULL,
+  connection_id TEXT NOT NULL, schedule TEXT, enabled INTEGER NOT NULL,
+  last_run_at REAL, last_status TEXT, created_at REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS alerts (
+  id TEXT PRIMARY KEY, monitor_id TEXT NOT NULL, monitor_name TEXT,
+  severity TEXT NOT NULL, message TEXT NOT NULL, metric REAL, detail TEXT,
+  acknowledged INTEGER NOT NULL DEFAULT 0, created_at REAL NOT NULL
+);
 """
 
 
@@ -239,6 +253,102 @@ class AppStore:
             d["detail"] = json.loads(d["detail"]) if d.get("detail") else {}
             out.append(d)
         return out
+
+
+    # --- feedback (👍/👎) ---
+    def add_feedback(self, query_id: str, rating: str, note: str | None = None,
+                     connection_id: str | None = None, question: str | None = None,
+                     sql: str | None = None) -> str:
+        fid = _uid()
+        with self._con() as con:
+            con.execute(
+                "INSERT INTO feedback(id,query_id,connection_id,question,sql,rating,"
+                "note,created_at) VALUES(?,?,?,?,?,?,?,?)",
+                (fid, query_id, connection_id, question, sql, rating, note, _now()))
+        return fid
+
+    def feedback_stats(self) -> dict:
+        with self._con() as con:
+            up = con.execute("SELECT COUNT(*) FROM feedback WHERE rating='up'").fetchone()[0]
+            down = con.execute("SELECT COUNT(*) FROM feedback WHERE rating='down'").fetchone()[0]
+        total = up + down
+        return {"up": up, "down": down, "total": total,
+                "satisfaction_rate": round(up / total, 4) if total else None}
+
+    def vetted_examples(self, limit: int = 20) -> list[dict]:
+        """👍'd answers become verified (question -> SQL) few-shot examples."""
+        with self._con() as con:
+            rows = con.execute(
+                "SELECT DISTINCT question, sql FROM feedback WHERE rating='up' "
+                "AND sql IS NOT NULL ORDER BY created_at DESC LIMIT ?",
+                (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
+    # --- monitors ---
+    def create_monitor(self, name: str, question: str, connection_id: str,
+                       schedule: str | None = None) -> dict:
+        mid = _uid()
+        with self._con() as con:
+            con.execute(
+                "INSERT INTO monitors(id,name,question,connection_id,schedule,"
+                "enabled,created_at) VALUES(?,?,?,?,?,?,?)",
+                (mid, name, question, connection_id, schedule, 1, _now()))
+        return self.get_monitor(mid)
+
+    def get_monitor(self, mid: str) -> dict | None:
+        with self._con() as con:
+            r = con.execute("SELECT * FROM monitors WHERE id=?", (mid,)).fetchone()
+        return dict(r) if r else None
+
+    def list_monitors(self, enabled_only: bool = False) -> list[dict]:
+        with self._con() as con:
+            q = "SELECT * FROM monitors"
+            if enabled_only:
+                q += " WHERE enabled=1"
+            rows = con.execute(q + " ORDER BY created_at DESC").fetchall()
+        return [dict(r) for r in rows]
+
+    def mark_monitor_run(self, mid: str, status: str) -> None:
+        with self._con() as con:
+            con.execute("UPDATE monitors SET last_run_at=?, last_status=? WHERE id=?",
+                        (_now(), status, mid))
+
+    def set_monitor_enabled(self, mid: str, enabled: bool) -> None:
+        with self._con() as con:
+            con.execute("UPDATE monitors SET enabled=? WHERE id=?",
+                        (int(enabled), mid))
+
+    def delete_monitor(self, mid: str) -> None:
+        with self._con() as con:
+            con.execute("DELETE FROM monitors WHERE id=?", (mid,))
+
+    # --- alerts ---
+    def add_alert(self, monitor_id: str, monitor_name: str, severity: str,
+                  message: str, metric: float | None = None,
+                  detail: dict | None = None) -> str:
+        aid = _uid()
+        with self._con() as con:
+            con.execute(
+                "INSERT INTO alerts(id,monitor_id,monitor_name,severity,message,"
+                "metric,detail,acknowledged,created_at) VALUES(?,?,?,?,?,?,?,?,?)",
+                (aid, monitor_id, monitor_name, severity, message, metric,
+                 json.dumps(detail or {}), 0, _now()))
+        return aid
+
+    def list_alerts(self, limit: int = 100) -> list[dict]:
+        with self._con() as con:
+            rows = con.execute("SELECT * FROM alerts ORDER BY created_at DESC "
+                               "LIMIT ?", (limit,)).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            d["detail"] = json.loads(d["detail"]) if d.get("detail") else {}
+            out.append(d)
+        return out
+
+    def acknowledge_alert(self, aid: str) -> None:
+        with self._con() as con:
+            con.execute("UPDATE alerts SET acknowledged=1 WHERE id=?", (aid,))
 
 
 _store: AppStore | None = None

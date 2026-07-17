@@ -114,3 +114,52 @@ export async function pinToDashboard(dashboardId: string, queryId: string) {
   });
   return await r.json();
 }
+
+// --- Decision Intelligence suite ---
+export async function sendFeedback(queryId: string, rating: "up" | "down", note?: string) {
+  const r = await fetch(`${BASE}/query/${queryId}/feedback`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ rating, note }),
+  });
+  return await r.json();
+}
+
+export async function getSegments(connectionId = "demo") {
+  const r = await fetch(`${BASE}/insights/segments?connection_id=${connectionId}`);
+  return await r.json();
+}
+
+export async function getTrust() {
+  const r = await fetch(`${BASE}/trust/summary`);
+  return await r.json();
+}
+
+export async function getMonitors() {
+  const r = await fetch(`${BASE}/monitors`);
+  return (await r.json()).monitors as any[];
+}
+
+export async function createMonitor(name: string, question: string, connectionId = "demo") {
+  const r = await fetch(`${BASE}/monitors`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, question, connection_id: connectionId }),
+  });
+  return await r.json();
+}
+
+export async function runMonitor(id: string) {
+  const r = await fetch(`${BASE}/monitors/${id}/run`, { method: "POST" });
+  return await r.json();
+}
+
+export async function runAllMonitors() {
+  const r = await fetch(`${BASE}/monitors/run-all`, { method: "POST" });
+  return await r.json();
+}
+
+export async function getAlerts() {
+  const r = await fetch(`${BASE}/alerts`);
+  return (await r.json()).alerts as any[];
+}

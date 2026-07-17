@@ -33,9 +33,18 @@ class Settings(BaseSettings):
     jwt_secret: str = Field(default="dev-insecure-change-me-in-production")
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
+    encryption_key: str | None = None          # for DSN encryption at rest
     cors_origins: list[str] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"]
     )
+    # Allow connections to loopback/private hosts (dev only). Off = SSRF-safe.
+    allow_local_targets: bool = False
+    # Require a valid API key / JWT to create connections & run custom queries.
+    # The bundled demo connection always stays open so the public demo works.
+    require_auth: bool = False
+    # Per-client rate limit on /query (requests per window seconds).
+    rate_limit_requests: int = 30
+    rate_limit_window_s: int = 60
 
     # --- App metadata DB (connections, history, dashboards, audit) ---
     # Default: local SQLite file. Production: set to a Supabase Postgres URL.

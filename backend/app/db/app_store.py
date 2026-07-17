@@ -95,6 +95,10 @@ class AppStore:
             r = con.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         return dict(r) if r else None
 
+    def list_users(self) -> list[dict]:
+        with self._con() as con:
+            return [dict(r) for r in con.execute("SELECT * FROM users").fetchall()]
+
     # --- connections ---
     def create_connection(self, user_id: str, name: str, target_url: str,
                           db_kind: str, is_readonly: bool = True) -> dict:

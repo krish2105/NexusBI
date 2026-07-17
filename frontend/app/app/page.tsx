@@ -1,5 +1,5 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Sparkles } from "lucide-react";
 import QueryBar from "@/components/QueryBar";
@@ -29,6 +29,16 @@ export default function Workspace() {
       setBusy(false);
     }
   };
+
+  // Shareable insight links: /app?q=... auto-runs the question on load.
+  const ran = useRef(false);
+  useEffect(() => {
+    if (ran.current) return;
+    ran.current = true;
+    const q = new URLSearchParams(window.location.search).get("q");
+    if (q) ask(q);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const pin = async (r: AnalysisResult) => {
     try {

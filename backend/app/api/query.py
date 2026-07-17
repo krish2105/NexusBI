@@ -3,20 +3,22 @@ from __future__ import annotations
 
 import json
 
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, Depends, HTTPException
 from fastapi.responses import StreamingResponse
 
 from app.agents.graph import run_analysis
-from app.api.deps import resolve_connection_url, store_dep
+from app.api.deps import (authorize_connection, get_current_user, rate_limit,
+                          resolve_connection_url)
 from app.api.schemas import QueryRequest
 from app.db.app_store import get_store
 
 router = APIRouter(tags=["query"])
 
 
-@router.post("/query")
-def submit_query(req: QueryRequest):
+@router.post("/query", dependencies=[Depends(rate_limit)])
+def submit_query(req: QueryRequest, user: dict | None = Depends(get_current_user)):
     """Register a question and return a query_id to stream."""
+    authorize_connection(req.connection_id, user)
     store = get_store()
     qid = store.save_query(req.connection_id, req.question, None, None, [], {},
                            {"status": "pending"})
@@ -49,9 +51,10 @@ def stream_query(query_id: str):
                                       "X-Accel-Buffering": "no"})
 
 
-@router.post("/query/run")
-def run_query_sync(req: QueryRequest):
+@router.post("/query/run", dependencies=[Depends(rate_limit)])
+def run_query_sync(req: QueryRequest, user: dict | None = Depends(get_current_user)):
     """Synchronous convenience: run the full pipeline and return the final result."""
+    authorize_connection(req.connection_id, user)
     store = get_store()
     qid = store.save_query(req.connection_id, req.question, None, None, [], {}, {})
     url = resolve_connection_url(req.connection_id)

@@ -6,6 +6,14 @@
 
 Agentic Decision Intelligence · five-layer text-to-SQL safety · hybrid-RAG schema grounding · Prophet-style forecasting + IsolationForest anomalies · free-tier native, **zero API keys required**.
 
+[![CI](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml/badge.svg)](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml)
+![safety](https://img.shields.io/badge/adversarial%20queries%20blocked-100%25-34D399)
+![tests](https://img.shields.io/badge/backend%20tests-67%20passing-6366F1)
+![free tier](https://img.shields.io/badge/API%20keys-0%20required-22D3EE)
+![license](https://img.shields.io/badge/data-CC%20BY--NC--SA%204.0-9BA3B4)
+
+![Nexus BI](docs/img/landing.png)
+
 </div>
 
 ---
@@ -24,7 +32,8 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 | **Text-to-SQL** | 100% data-integrity; ~49% zero-key generator execution accuracy (higher with a Groq key) |
 | **Forecast** | Holt-Winters backtest, MAPE on a 3-month holdout |
 | **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `56 passed` — safety rules, read-only enforcement, graph, API |
+| **Tests** | `67 passed` — safety rules, read-only enforcement, graph, API, hardening |
+| **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres
 
@@ -47,6 +56,13 @@ cd ../backend && python -m pytest && python -m evals.run_evals
 
 Open **http://localhost:3000/app**, click an example chip, and watch the agent build the answer. Try *"delete all orders"* to see the safety layer block it.
 
+**Shareable insight links** (auto-run the question — great for a demo/recording):
+- `…/app?q=Show monthly merchandise revenue over time` → live chart + forecast
+- `…/app?q=Top 5 categories by merchandise revenue` → grounded join + insight
+- `…/app?q=delete all orders` → the safety layer blocks it
+
+See **[`docs/DEMO.md`](docs/DEMO.md)** for a 90-second walkthrough script.
+
 ### Upgrades (all optional, all free)
 - **General LLM:** set `GROQ_API_KEY` (free at console.groq.com) — the SQL generator and narrator switch to `llama-3.3-70b`. Or run **Ollama** locally.
 - **Production Postgres:** `docker compose up -d`, load the data package's `load_postgres.sql` + `read_only_role.sql` into `demo-db`, and set `DEMO_TARGET_URL` to the read-only DSN.
@@ -66,7 +82,9 @@ Next.js (Vercel)  ──REST + SSE──►  FastAPI (Render)
 Two databases, kept strictly separate. The LLM only plans and narrates — the database computes aggregates and scikit-learn/statsmodels compute forecasts, so every number is real. Full writeups:
 
 - **[`docs/SQL_SAFETY.md`](docs/SQL_SAFETY.md)** — the five-layer defense (the centerpiece)
+- **[`docs/SECURITY.md`](docs/SECURITY.md)** — threat model + platform hardening (SSRF, DSN encryption, tenant isolation, rate limits)
 - **[`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md)** — agent graph + two-DB separation
+- **[`docs/DEMO.md`](docs/DEMO.md)** — 90-second walkthrough script
 - **[`docs/VIVA.md`](docs/VIVA.md)** — interview Q&A
 
 ## Deploy

@@ -9,6 +9,7 @@ python-multipart>=0.0.9
 # --- Data / SQL safety (the critical core) ---
 sqlglot>=25.0
 pandas>=2.1
+cryptography>=42.0     # encrypt target DSNs at rest
 
 # --- ML: forecasting + anomaly + chart heuristics ---
 scikit-learn>=1.4

@@ -204,7 +204,7 @@ def eval_rag() -> dict:
     }
 
 
-def main() -> None:
+def main(gate: bool = False) -> None:
     reports = {
         "sql_safety_report.json": eval_safety(),
         "text2sql_report.json": eval_text2sql(),
@@ -235,6 +235,25 @@ def main() -> None:
     print("=" * 60)
     print(f"Reports written to {OUT}/")
 
+    if gate:
+        # CI gate: the safety layer must block 100% of adversarial queries and
+        # allow the control. Any regression fails the build.
+        failures = []
+        if s["block_rate"] != 1.0:
+            failures.append(f"safety block rate {s['block_rate']*100:.1f}% < 100%")
+        if s["control_allowed"] < 1:
+            failures.append("control question was not allowed")
+        if t["data_integrity_rate"] is not None and t["data_integrity_rate"] < 1.0:
+            failures.append(f"data integrity {t['data_integrity_rate']*100:.1f}% < 100%")
+        if failures:
+            print("\nGATE FAILED:")
+            for f_ in failures:
+                print(f"  ✗ {f_}")
+            raise SystemExit(1)
+        print("\nGATE PASSED ✓  (safety 100%, control allowed, data integrity 100%)")
+
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    main(gate="--gate" in sys.argv)

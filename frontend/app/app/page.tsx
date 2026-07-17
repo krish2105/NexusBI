@@ -5,6 +5,7 @@ import { Sparkles } from "lucide-react";
 import QueryBar from "@/components/QueryBar";
 import AgentStepper from "@/components/AgentStepper";
 import ResultCanvas from "@/components/ResultCanvas";
+import ConnectionPicker from "@/components/ConnectionPicker";
 import { streamQuery, createDashboard, pinToDashboard } from "@/lib/api";
 import type { AgentEvent, AnalysisResult } from "@/lib/types";
 
@@ -14,6 +15,9 @@ export default function Workspace() {
   const [busy, setBusy] = useState(false);
   const [question, setQuestion] = useState("");
   const [toast, setToast] = useState<string | null>(null);
+  const [connectionId, setConnectionId] = useState("demo");
+  const connRef = useRef("demo");
+  connRef.current = connectionId;
 
   const ask = async (q: string) => {
     setBusy(true);
@@ -21,7 +25,11 @@ export default function Workspace() {
     setEvents([]);
     setQuestion(q);
     try {
-      const final = await streamQuery(q, (ev) => setEvents((p) => [...p, ev]));
+      const final = await streamQuery(
+        q,
+        (ev) => setEvents((p) => [...p, ev]),
+        connRef.current,
+      );
       setResult(final);
     } catch (e) {
       setToast("Could not reach the Nexus backend. Is it running on :8000?");
@@ -55,7 +63,10 @@ export default function Workspace() {
     <main className="mx-auto grid min-h-screen max-w-6xl grid-cols-1 gap-6 px-4 pb-16 pt-28 lg:grid-cols-[340px_1fr]">
       {/* left: query + pipeline */}
       <div className="flex flex-col gap-6">
-        <QueryBar onSubmit={ask} busy={busy} />
+        <div className="flex flex-col gap-3">
+          <ConnectionPicker value={connectionId} onChange={setConnectionId} />
+          <QueryBar onSubmit={ask} busy={busy} />
+        </div>
         <div className="card p-4">
           <p className="mb-3 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-ink-faint">
             <Sparkles className="h-3.5 w-3.5 text-indigo" /> Analysis pipeline

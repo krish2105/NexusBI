@@ -1,18 +1,49 @@
 "use client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { motion } from "motion/react";
-import { Database, Table2, BookOpen, ShieldCheck, Gauge } from "lucide-react";
-import { getSchema, getEvals } from "@/lib/api";
+import Link from "next/link";
+import {
+  Database,
+  Table2,
+  BookOpen,
+  ShieldCheck,
+  Gauge,
+  Upload,
+  Loader2,
+  ArrowRight,
+} from "lucide-react";
+import { getSchema, getEvals, uploadCsv } from "@/lib/api";
 
 export default function Connections() {
   const [schema, setSchema] = useState<any>(null);
   const [evals, setEvals] = useState<any>(null);
   const [open, setOpen] = useState<string | null>("orders");
+  const [uploading, setUploading] = useState(false);
+  const [uploaded, setUploaded] = useState<any>(null);
+  const [uploadErr, setUploadErr] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     getSchema().then(setSchema).catch(() => {});
     getEvals().then(setEvals).catch(() => {});
   }, []);
+
+  const onFiles = async (files: FileList | null) => {
+    if (!files || !files.length) return;
+    setUploading(true);
+    setUploadErr(null);
+    setUploaded(null);
+    try {
+      const name = files[0].name.replace(/\.[^.]+$/, "");
+      const res = await uploadCsv(files, name);
+      setUploaded(res);
+    } catch (e: any) {
+      setUploadErr(e.message || "upload failed");
+    } finally {
+      setUploading(false);
+      if (fileRef.current) fileRef.current.value = "";
+    }
+  };
 
   const safety = evals?.sql_safety;
   const t2s = evals?.text2sql;
@@ -31,6 +62,64 @@ export default function Connections() {
           <b>Demo — Olist e-commerce</b> · SQLite · connected read-only ·{" "}
           <span className="text-pos">writes rejected by construction</span>
         </span>
+      </div>
+
+      {/* Bring your own data */}
+      <div className="mt-4 card gradient-border relative p-5">
+        <div className="flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-center">
+          <div>
+            <h2 className="flex items-center gap-2 text-lg font-medium">
+              <Upload className="h-5 w-5 text-indigo" /> Bring your own data
+            </h2>
+            <p className="mt-1 text-sm text-ink-dim">
+              Upload a CSV → Nexus builds an instant read-only warehouse and you
+              can ask it questions with the same safety guard. Nothing leaves your
+              machine in local mode.
+            </p>
+          </div>
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={uploading}
+            className="focus-ring flex shrink-0 items-center gap-2 rounded-xl bg-ai-gradient px-4 py-2.5 text-sm font-medium text-white shadow-glow disabled:opacity-50"
+          >
+            {uploading ? (
+              <Loader2 className="h-4 w-4 animate-spin" />
+            ) : (
+              <Upload className="h-4 w-4" />
+            )}
+            {uploading ? "Uploading…" : "Upload CSV"}
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            accept=".csv,.tsv,.txt"
+            multiple
+            className="hidden"
+            onChange={(e) => onFiles(e.target.files)}
+          />
+        </div>
+        {uploadErr && <p className="mt-3 text-sm text-neg">{uploadErr}</p>}
+        {uploaded && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 rounded-xl border border-pos/25 bg-pos/5 p-4"
+          >
+            <p className="text-sm">
+              <b>{uploaded.name}</b> is ready ·{" "}
+              {uploaded.tables
+                .map((t: any) => `${t.table} (${t.rows} rows)`)
+                .join(", ")}
+            </p>
+            <Link
+              href={`/app`}
+              className="mt-3 inline-flex items-center gap-1.5 text-sm text-cyan hover:underline"
+            >
+              Ask questions about it in the workspace
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+          </motion.div>
+        )}
       </div>
 
       {/* Accuracy report */}

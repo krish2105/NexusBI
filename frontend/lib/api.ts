@@ -80,6 +80,18 @@ export async function getConnections() {
   return (await r.json()).connections as any[];
 }
 
+export async function uploadCsv(files: FileList | File[], name: string) {
+  const fd = new FormData();
+  Array.from(files).forEach((f) => fd.append("files", f));
+  fd.append("name", name);
+  const r = await fetch(`${BASE}/connections/upload`, { method: "POST", body: fd });
+  if (!r.ok) {
+    const err = await r.json().catch(() => ({}));
+    throw new Error(err.detail || "upload failed");
+  }
+  return await r.json();
+}
+
 export async function getEvals() {
   const r = await fetch(`${BASE}/evals`);
   return await r.json();

@@ -109,8 +109,140 @@ def _default_limit(top_n: int | None) -> int:
     return top_n or 10_000
 
 
-def synthesize_sql(question: str, plan: dict) -> tuple[str, str, list[str]]:
-    """Deterministic grounded synthesis. Returns (sql, explanation, assumptions)."""
+# --- generic (schema-agnostic) synthesizer for uploaded / arbitrary data -----
+import re as _re
+
+_NUMERIC_TYPES = ("INT", "REAL", "NUMERIC", "FLOAT", "DOUBLE", "DECIMAL", "BIGINT")
+_DATEISH = _re.compile(r"(date|time|_at$|timestamp|year_month|period|month|year)", _re.I)
+_ID_LIKE = _re.compile(r"(^id$|_id$|code|zip|postal|phone|lat|lng|longitude|latitude"
+                       r"|number|_no$|uuid|guid)", _re.I)
+_VALUEISH = _re.compile(r"(value|amount|total|revenue|sales|price|cost|qty|quantity"
+                        r"|sum|spend|profit|margin)", _re.I)
+_RATEISH = _re.compile(r"(rate|ratio|avg|average|mean|score|percent|pct)", _re.I)
+_TOKEN = _re.compile(r"[a-z0-9]+")
+
+
+def _toks(s: str) -> set[str]:
+    return set(_TOKEN.findall(s.lower()))
+
+
+def _sing(t: str) -> str:
+    return t[:-1] if t.endswith("s") and len(t) > 3 else t
+
+
+def _col_matches(colname: str, q_tokens: set[str]) -> bool:
+    """Fuzzy singular/plural-aware match of a column against question tokens."""
+    q_stems = {_sing(t) for t in q_tokens}
+    for ct in _toks(colname):
+        if len(ct) < 3:
+            continue
+        if ct in q_tokens or _sing(ct) in q_stems:
+            return True
+    return False
+
+
+def is_olist_schema(schema: RetrievedSchema) -> bool:
+    names = {t.lower() for t in schema.table_names()}
+    return "order_items" in names or "orders" in names
+
+
+def _classify_cols(table):
+    dates, numerics, texts = [], [], []
+    for c in table.columns:
+        t = (c.data_type or "TEXT").upper()
+        is_num = any(t.startswith(p) or p in t for p in _NUMERIC_TYPES)
+        if _DATEISH.search(c.name):
+            dates.append(c.name)
+        elif is_num and not _ID_LIKE.search(c.name):
+            numerics.append(c.name)
+        elif not is_num:
+            texts.append(c.name)
+    return dates, numerics, texts
+
+
+def synthesize_generic(question: str, plan: dict, schema: RetrievedSchema
+                       ) -> tuple[str, str, list[str]]:
+    """Build a grounded single-table query for an arbitrary schema."""
+    q_tokens = _toks(question)
+    assumptions: list[str] = []
+
+    # 1) Base table: best column/name overlap with the question.
+    def tscore(t):
+        s = len(_toks(t.name) & q_tokens) * 2
+        s += sum(1 for c in t.columns if _toks(c.name) & q_tokens)
+        return s
+    table = max(schema.tables, key=tscore)
+    if tscore(table) == 0:
+        assumptions.append(f"Question didn't name a table; used '{table.name}'.")
+    dates, numerics, texts = _classify_cols(table)
+
+    # 2) Metric. Aggregation intent comes from the QUESTION first, then the column.
+    mentioned_num = next((c for c in numerics if _col_matches(c, q_tokens)), None)
+    wants_count = bool(_re.search(r"\b(how many|count|number of|rows?)\b", question, _re.I))
+    q_wants_avg = bool(_re.search(r"\b(average|avg|mean)\b", question, _re.I))
+    q_wants_sum = bool(_re.search(r"\b(total|sum)\b", question, _re.I))
+
+    if wants_count and not mentioned_num:
+        col = None
+    elif mentioned_num:
+        col = mentioned_num
+    elif numerics:
+        col = next((c for c in numerics if _VALUEISH.search(c)), numerics[0])
+    else:
+        col = None
+
+    if col is None:
+        metric_expr, alias = "COUNT(*)", "row_count"
+    else:
+        if q_wants_avg:
+            agg = "AVG"
+        elif q_wants_sum:
+            agg = "SUM"
+        elif _RATEISH.search(col):
+            agg = "AVG"
+        else:
+            agg = "SUM"
+        metric_expr = (f'ROUND(AVG("{col}"), 2)' if agg == "AVG" else f'{agg}("{col}")')
+        alias = f"{agg.lower()}_{col}".lower()
+
+    # 3) Dimension.
+    mentioned_text = next((c for c in texts if _col_matches(c, q_tokens)), None)
+    is_time = plan.get("is_time_series") and dates
+    top_n = plan.get("top_n")
+    if is_time:
+        dim, dim_label, order = f'"{dates[0]}"', dates[0], "ASC"
+    elif mentioned_text:
+        dim, dim_label, order = f'"{mentioned_text}"', mentioned_text, "DESC"
+    elif (top_n or _re.search(r"\bby\b|\bper\b|\beach\b|top\b", question, _re.I)) and texts:
+        dim, dim_label, order = f'"{texts[0]}"', texts[0], "DESC"
+        assumptions.append(f"Grouped by '{texts[0]}' (first categorical column).")
+    else:
+        dim = None
+
+    tbl = f'"{table.name}"'
+    if dim is None:
+        sql = f"SELECT {metric_expr} AS {alias}\nFROM {tbl}\nLIMIT 10000"
+        return sql, f"{alias} across {table.name}.", assumptions
+
+    limit = top_n or 50
+    order_by = alias if order == "DESC" else dim
+    sql = (f"SELECT {dim} AS {dim_label}, {metric_expr} AS {alias}\n"
+           f"FROM {tbl}\nGROUP BY {dim}\n"
+           f"ORDER BY {order_by} {order}\nLIMIT {limit}")
+    return sql, f"{alias} by {dim_label} from {table.name}.", assumptions
+
+
+def synthesize_sql(question: str, plan: dict,
+                   schema: RetrievedSchema | None = None) -> tuple[str, str, list[str]]:
+    """Deterministic grounded synthesis. Returns (sql, explanation, assumptions).
+
+    Uses the Olist-tuned metric/dimension library when the connection is the
+    Olist star schema; otherwise falls back to the schema-agnostic synthesizer so
+    zero-key generation still works on arbitrary uploaded data.
+    """
+    if schema is not None and not is_olist_schema(schema):
+        return synthesize_generic(question, plan, schema)
+
     metric = plan["metric"]
     dimension = plan["dimension"]
     shape = plan["shape"]
@@ -205,7 +337,7 @@ def generate_sql(question: str, schema: RetrievedSchema,
         except Exception:  # noqa: BLE001 - fall back deterministically
             pass
 
-    sql, expl, assumptions = synthesize_sql(question, plan)
+    sql, expl, assumptions = synthesize_sql(question, plan, schema)
     return {"sql": sql, "explanation": expl, "assumptions": assumptions,
             "generator": "deterministic", "plan": plan}
 
@@ -228,6 +360,6 @@ def repair_sql(question: str, schema: RetrievedSchema, plan: dict,
         except Exception:  # noqa: BLE001
             pass
     # Deterministic path is already grounded; re-synthesize as a safe fallback.
-    sql, expl, assumptions = synthesize_sql(question, plan)
+    sql, expl, assumptions = synthesize_sql(question, plan, schema)
     return {"sql": sql, "explanation": expl + " (resynthesized)",
             "assumptions": assumptions, "generator": "deterministic", "plan": plan}

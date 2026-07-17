@@ -14,7 +14,7 @@ import re
 from dataclasses import dataclass, field
 
 from app.config import settings
-from app.rag.catalog import Catalog, GlossaryEntry, Table, get_catalog
+from app.rag.catalog import Catalog, GlossaryEntry, Table, catalog_for_connection
 
 _WORD = re.compile(r"[a-z][a-z0-9_]+")
 _STOP = {
@@ -76,7 +76,7 @@ def retrieve_schema(question: str, connection_url: str | None = None,
                     k: int | None = None,
                     catalog: Catalog | None = None) -> RetrievedSchema:
     k = k or settings.retrieval_k
-    catalog = catalog or get_catalog()
+    catalog = catalog or catalog_for_connection(connection_url)
     q_tokens = _tokens(question)
 
     # 1) Glossary hits first — they carry canonical SQL and required tables.
@@ -110,9 +110,12 @@ def retrieve_schema(question: str, connection_url: str | None = None,
             chosen.append(t)
             scores[t.name] = scores.get(t.name, 2.0)
 
-    # 4) Safety net: never return an empty schema.
+    # 4) Safety net: never return an empty schema. Prefer the Olist core if
+    #    present (demo), else just take the connection's first tables.
     if not chosen:
         core = ["orders", "order_items", "products", "categories", "customers"]
         chosen = [catalog.tables[n] for n in core if n in catalog.tables][:k]
+    if not chosen:
+        chosen = list(catalog.tables.values())[:k]
 
     return RetrievedSchema(tables=chosen, glossary=gl_hits, scores=scores)

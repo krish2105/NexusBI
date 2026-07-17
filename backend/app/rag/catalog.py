@@ -114,13 +114,24 @@ def _sample_values(pool: TargetPool, table: str, column: str,
         return []
 
 
-def build_catalog(pool: TargetPool | None = None, with_samples: bool = True) -> Catalog:
+def build_catalog(pool: TargetPool | None = None, with_samples: bool = True,
+                  use_reference_dictionary: bool = True) -> Catalog:
+    """Build the semantic catalog for a connection.
+
+    ``use_reference_dictionary`` loads the Olist ``data_dictionary.csv`` +
+    ``business_glossary.csv`` (the bundled demo). For an uploaded/arbitrary DB
+    there is no such dictionary, so the catalog is built purely from the live
+    introspected schema — every column is real, so SQL stays grounded.
+    """
     pool = pool or TargetPool()
     dict_path = settings.data_dir / "data_dictionary.csv"
     gloss_path = settings.data_dir / "business_glossary.csv"
 
-    dd = _load_data_dictionary(dict_path)
-    glossary = _load_glossary(gloss_path)
+    if use_reference_dictionary and dict_path.exists():
+        dd = _load_data_dictionary(dict_path)
+        glossary = _load_glossary(gloss_path) if gloss_path.exists() else []
+    else:
+        dd, glossary = {}, []
     live_tables = {t.lower() for t in pool.list_tables()}
 
     tables: dict[str, Table] = {}
@@ -152,10 +163,26 @@ def build_catalog(pool: TargetPool | None = None, with_samples: bool = True) -> 
     return Catalog(tables=tables, glossary=glossary)
 
 
-@lru_cache(maxsize=4)
+@lru_cache(maxsize=16)
+def _cached_catalog(url: str, use_ref: bool) -> Catalog:
+    return build_catalog(TargetPool(url=url), use_reference_dictionary=use_ref)
+
+
+def catalog_for_connection(url: str | None = None) -> Catalog:
+    """Per-connection catalog. The bundled demo uses the Olist dictionary +
+    glossary; any other connection is described purely from its live schema."""
+    url = url or settings.demo_target_url
+    return _cached_catalog(url, url == settings.demo_target_url)
+
+
+def invalidate_catalog(url: str | None = None) -> None:
+    _cached_catalog.cache_clear()
+
+
+# Backwards-compatible aliases.
 def cached_catalog(url: str) -> Catalog:
-    return build_catalog(TargetPool(url=url))
+    return catalog_for_connection(url)
 
 
 def get_catalog() -> Catalog:
-    return cached_catalog(settings.demo_target_url)
+    return catalog_for_connection(settings.demo_target_url)

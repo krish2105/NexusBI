@@ -74,6 +74,12 @@ class Settings(BaseSettings):
     forecast_min_points: int = 6
     forecast_horizon: int = 6
 
+    # --- CSV upload (bring-your-own-data) safety caps ---
+    max_upload_mb: int = 25
+    max_rows_per_table: int = 200_000
+    max_columns_per_table: int = 80
+    max_tables_per_upload: int = 10
+
     # --- Observability (optional free tier) ---
     langfuse_public_key: str | None = None
     langfuse_secret_key: str | None = None

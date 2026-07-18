@@ -21,8 +21,8 @@ const reveal = {
 };
 
 export default function Trust() {
-  const { data: t, loading, error, reload } = useResource<any>(() => getTrust());
-  if (loading) return <PageLoading />;
+  const { data: t, loading, error, reload, slow } = useResource<any>(() => getTrust());
+  if (loading) return <PageLoading slow={slow} />;
   if (error || !t)
     return (
       <main className="mx-auto max-w-6xl px-4 pt-28">

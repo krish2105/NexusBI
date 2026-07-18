@@ -1,5 +1,6 @@
 "use client";
-import { AlertTriangle, Inbox, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, Inbox, Loader2, RefreshCw, Zap } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
 
 /** Shimmering placeholder block (uses the `shimmer` animation from tailwind.config). */
 export function Skeleton({ className = "" }: { className?: string }) {
@@ -23,9 +24,33 @@ export function CardSkeleton() {
   );
 }
 
+/** Shown once a request has run past the "just loading" window — free-tier
+ *  backends spin down on inactivity, so the first request after a while wakes
+ *  a cold instance. Without this, a 20-50s wait looks indistinguishable from
+ *  a hang. */
+export function ColdStartHint({ show }: { show: boolean }) {
+  return (
+    <AnimatePresence>
+      {show && (
+        <motion.div
+          initial={{ opacity: 0, y: -6 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0 }}
+          className="mt-4 flex items-center gap-2 text-xs text-ink-faint"
+        >
+          <Zap className="h-3.5 w-3.5 animate-pulse text-amber" />
+          Waking up the free-tier backend — first request after inactivity can
+          take up to ~50s. Hang tight.
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
 /** Full-page skeleton — header + a grid of cards. Used by route `loading.tsx`
- *  and page-level loading. */
-export function PageLoading() {
+ *  and page-level loading. Pass `slow` (from useResource) to explain a long
+ *  wait instead of letting it read as frozen. */
+export function PageLoading({ slow = false }: { slow?: boolean }) {
   return (
     <main
       className="mx-auto max-w-6xl px-4 pb-20 pt-28"
@@ -34,6 +59,7 @@ export function PageLoading() {
     >
       <Skeleton className="h-8 w-64" />
       <Skeleton className="mt-3 h-4 w-96 max-w-full" />
+      <ColdStartHint show={slow} />
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
         {Array.from({ length: 6 }).map((_, i) => (
           <CardSkeleton key={i} />

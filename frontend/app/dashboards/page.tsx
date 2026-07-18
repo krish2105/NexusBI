@@ -6,7 +6,7 @@ import { LayoutGrid, ArrowRight, Sparkles, Loader2, Wand2 } from "lucide-react";
 import Link from "next/link";
 import { generateDashboard, getDashboards } from "@/lib/api";
 import { useResource } from "@/lib/useResource";
-import { Skeleton } from "@/components/States";
+import { ColdStartHint, Skeleton } from "@/components/States";
 
 const IDEAS = [
   "An executive overview",
@@ -22,7 +22,7 @@ export default function Dashboards() {
   const inputRef = useRef<HTMLInputElement>(null);
   // Uses the shared API base (works in prod where the frontend calls the backend
   // directly), with proper loading/error state instead of a swallowed fetch.
-  const { data: dashboards, loading, error, reload } = useResource<any[]>(() =>
+  const { data: dashboards, loading, error, reload, slow } = useResource<any[]>(() =>
     getDashboards(),
   );
 
@@ -108,6 +108,9 @@ export default function Dashboards() {
               Array.from({ length: 3 }).map((_, i) => (
                 <Skeleton key={i} className="h-[92px] w-full" />
               ))}
+          </div>
+          <ColdStartHint show={loading && slow} />
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {!loading &&
               (dashboards ?? []).map((d, i) => (
               <motion.div

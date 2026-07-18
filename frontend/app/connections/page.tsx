@@ -15,13 +15,14 @@ import {
 } from "lucide-react";
 import { getSchema, getEvals, uploadCsv, connectDatabase } from "@/lib/api";
 import { useResource } from "@/lib/useResource";
-import { CardSkeleton, ErrorState } from "@/components/States";
+import { CardSkeleton, ColdStartHint, ErrorState } from "@/components/States";
 
 export default function Connections() {
   const {
     data: meta,
     loading: schemaLoading,
     error: schemaError,
+    slow: schemaSlow,
     reload: reloadSchema,
   } = useResource<{ schema: any; evals: any }>(async () => {
     const [schema, evals] = await Promise.all([getSchema(), getEvals()]);
@@ -220,6 +221,7 @@ export default function Connections() {
         <div className="mt-8 grid gap-3">
           <CardSkeleton />
           <CardSkeleton />
+          <ColdStartHint show={schemaSlow} />
         </div>
       )}
       {!schemaLoading && schemaError && (

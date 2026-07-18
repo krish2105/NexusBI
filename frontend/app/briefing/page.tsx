@@ -14,7 +14,7 @@ import {
 } from "lucide-react";
 import { getBriefing } from "@/lib/api";
 import { useResource } from "@/lib/useResource";
-import { ErrorState } from "@/components/States";
+import { ColdStartHint, ErrorState } from "@/components/States";
 import Sparkline from "@/components/Sparkline";
 import { useChartTheme } from "@/lib/chartTheme";
 import type { Briefing, BriefingMetric } from "@/lib/types";
@@ -29,16 +29,19 @@ function greeting() {
 export default function BriefingPage() {
   const chart = useChartTheme();
   const COLOR = { good: chart.pos, bad: chart.neg, neutral: chart.neutral } as const;
-  const { data: b, loading, error, reload } = useResource<Briefing>(() =>
+  const { data: b, loading, error, reload, slow } = useResource<Briefing>(() =>
     getBriefing(),
   );
 
   if (loading)
     return (
       <main className="grid min-h-screen place-items-center text-ink-dim">
-        <div className="flex items-center gap-2">
-          <span className="h-2 w-2 animate-pulse rounded-full bg-indigo" />
-          Nexus is analysing your business…
+        <div className="flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 animate-pulse rounded-full bg-indigo" />
+            Nexus is analysing your business…
+          </div>
+          <ColdStartHint show={slow} />
         </div>
       </main>
     );

@@ -17,11 +17,11 @@ import { ErrorState, PageLoading } from "@/components/States";
 import { tooltipProps, useChartTheme } from "@/lib/chartTheme";
 
 export default function Segments() {
-  const { data, loading, error, reload } = useResource<any>(() => getSegments());
+  const { data, loading, error, reload, slow } = useResource<any>(() => getSegments());
   const chart = useChartTheme();
   const COLORS = chart.segments;
 
-  if (loading) return <PageLoading />;
+  if (loading) return <PageLoading slow={slow} />;
   if (error || !data)
     return (
       <main className="mx-auto max-w-6xl px-4 pt-28">

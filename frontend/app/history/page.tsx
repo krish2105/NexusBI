@@ -3,7 +3,7 @@ import { motion } from "motion/react";
 import { History as HistoryIcon, ShieldCheck, ShieldAlert } from "lucide-react";
 import { getHistory, getAudit } from "@/lib/api";
 import { useResource } from "@/lib/useResource";
-import { CardSkeleton, EmptyState, ErrorState } from "@/components/States";
+import { CardSkeleton, ColdStartHint, EmptyState, ErrorState } from "@/components/States";
 
 export default function HistoryPage() {
   const {
@@ -11,6 +11,7 @@ export default function HistoryPage() {
     loading,
     error,
     reload,
+    slow,
   } = useResource<{ queries: any[]; audit: any[] }>(async () => {
     const [queries, audit] = await Promise.all([getHistory(), getAudit()]);
     return { queries, audit };
@@ -46,6 +47,7 @@ export default function HistoryPage() {
               <>
                 <CardSkeleton />
                 <CardSkeleton />
+                <ColdStartHint show={slow} />
               </>
             )}
             {!loading && queries.length === 0 && (

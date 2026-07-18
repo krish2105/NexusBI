@@ -1,4 +1,6 @@
-FROM python:3.11-slim
+# 3.13 matches the version the pinned requirements are tested against (some pins,
+# e.g. numpy 2.5.x, require >=3.12), so the deployed image == the tested env.
+FROM python:3.13-slim
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app

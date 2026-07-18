@@ -1,44 +1,52 @@
+# Exact-pinned direct dependencies — these are the versions the test suite (158
+# passing) and the CI safety gate (29/29 adversarial blocked) are verified against,
+# so a deployed build behaves identically to what was tested. Bump deliberately
+# (change a pin, re-run `pytest` + `python -m evals.run_evals --gate`), never by a
+# silent transitive drift. This matters most for `sqlglot`: the 5-layer SQL safety
+# layer parses generated SQL to a sqlglot AST, so a parser change could alter what
+# the guard accepts — pinning freezes that behavior (and the gate re-checks it).
+
 # --- Core API ---
-fastapi>=0.110
-uvicorn[standard]>=0.27
-sse-starlette>=2.0
-pydantic>=2.6
-pydantic-settings>=2.2
-python-multipart>=0.0.9
+fastapi==0.139.2
+uvicorn[standard]==0.51.0
+sse-starlette==3.4.5
+pydantic==2.13.4
+pydantic-settings==2.14.2
+python-multipart==0.0.32
 
 # --- Data / SQL safety (the critical core) ---
-sqlglot>=25.0
-pandas>=2.1
-cryptography>=42.0     # encrypt target DSNs at rest
+sqlglot==30.12.0          # AST parser the safety layer depends on — pin is load-bearing
+pandas==3.0.3
+cryptography==49.0.0       # encrypt target DSNs at rest
 
 # --- ML: forecasting + anomaly + chart heuristics ---
-scikit-learn>=1.4
-statsmodels>=0.14        # STL decomposition for time-series anomalies
-numpy>=1.26
+scikit-learn==1.9.0
+statsmodels==0.14.6        # STL decomposition for time-series anomalies
+numpy==2.5.1
 
 # --- Agent orchestration (graph). Falls back to the bundled mini-runtime
 #     if langgraph is not installed, so the app runs with or without it. ---
-langgraph>=0.2 ; python_version >= "3.10"
-langchain-core>=0.3
+langgraph==1.2.9 ; python_version >= "3.10"
+langchain-core==1.4.9
 
 # --- Testing ---
-pytest>=8.0
-httpx>=0.27              # FastAPI TestClient
+pytest==9.1.1
+httpx==0.28.1              # FastAPI TestClient
 
-groq>=0.11                # free-tier hosted LLM (Tier 1: LLM path)
-langfuse>=2.60            # free-tier tracing (Tier 1: observability)
+groq==1.5.0                # free-tier hosted LLM (Tier 1: LLM path)
+langfuse==4.14.0           # free-tier tracing (Tier 1: observability)
 
 # --- Durable app-metadata store ---
 # Postgres driver for the app DB. Local dev defaults to SQLite (no driver needed),
 # but production on an ephemeral filesystem (Render free) must set APP_DB_URL to a
 # managed Postgres so state survives redeploys — see docs/DEPLOY.md. Also serves
 # as the Postgres *target*-DB driver for the multi-dialect path.
-psycopg2-binary>=2.9
+psycopg2-binary==2.9.12
 
 # --- Optional target-DB drivers (multi-dialect; install what you connect to) ---
-# pymysql>=1.1               # MySQL / MariaDB target
-# google-cloud-bigquery>=3.0 # BigQuery target
+# pymysql==1.1.1               # MySQL / MariaDB target
+# google-cloud-bigquery>=3.0   # BigQuery target
 
 # --- Optional upgrades (uncomment as needed; all free) ---
 # sentence-transformers>=2.7   # local bge-small embeddings (no API key)
-# statsforecast>=1.7     # AutoARIMA forecasting
+# statsforecast>=1.7           # AutoARIMA forecasting

@@ -5,13 +5,13 @@ import { motion } from "motion/react";
 import { Sparkles } from "lucide-react";
 
 const LINKS = [
+  { href: "/briefing", label: "Briefing" },
   { href: "/app", label: "Workspace" },
   { href: "/dashboards", label: "Dashboards" },
   { href: "/segments", label: "Segments" },
   { href: "/monitors", label: "Monitors" },
   { href: "/trust", label: "Trust" },
   { href: "/connections", label: "Data" },
-  { href: "/history", label: "History" },
 ];
 
 export default function Nav() {

@@ -72,6 +72,42 @@ export interface RootCause {
   narrative: string;
 }
 
+export interface BriefingMetric {
+  label: string;
+  column: string;
+  unit: string;
+  value: number;
+  value_fmt: string;
+  mom_pct: number;
+  direction: "up" | "down";
+  sentiment: "good" | "bad" | "neutral";
+  anomaly: boolean;
+  spark: number[];
+  forecast_next: number | null;
+  period_label: string;
+}
+
+export interface WhatChanged {
+  label: string;
+  mom_pct: number;
+  sentiment: string;
+  narrative: string;
+  rootcause?: RootCause;
+}
+
+export interface Briefing {
+  available: boolean;
+  reason?: string;
+  connection_id: string;
+  as_of: string;
+  headline: string;
+  metrics: BriefingMetric[];
+  what_changed: WhatChanged[];
+  watchouts: { message: string; severity: string }[];
+  forecast_outlook: string | null;
+  generated_note: string;
+}
+
 export interface AgentEvent {
   node: string;
   status: string;

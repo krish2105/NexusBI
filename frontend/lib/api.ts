@@ -163,6 +163,11 @@ export async function getTrust() {
   return await r.json();
 }
 
+export async function getBriefing(connectionId = "demo") {
+  const r = await fetch(`${BASE}/briefing?connection_id=${connectionId}`);
+  return await r.json();
+}
+
 export async function getMonitors() {
   const r = await fetch(`${BASE}/monitors`);
   return (await r.json()).monitors as any[];

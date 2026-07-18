@@ -22,7 +22,7 @@ cryptography==49.0.0       # encrypt target DSNs at rest
 # --- ML: forecasting + anomaly + chart heuristics ---
 scikit-learn==1.9.0
 statsmodels==0.14.6        # STL decomposition for time-series anomalies
-numpy==2.5.1
+numpy==2.4.6                # latest release compatible with CI's Python 3.11 (2.5.0+ requires 3.12+)
 
 # --- Agent orchestration (graph). Falls back to the bundled mini-runtime
 #     if langgraph is not installed, so the app runs with or without it. ---

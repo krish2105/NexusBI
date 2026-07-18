@@ -27,6 +27,15 @@ from pathlib import Path
 from typing import Any
 
 from app.config import settings
+from app.core.crypto import decrypt, encrypt
+
+
+def _load_payload(val: str | None) -> dict | None:
+    """Query result payloads (which cache row data / PII) are encrypted at rest.
+    ``decrypt`` tolerates legacy plaintext, so old rows still load."""
+    if not val:
+        return None
+    return json.loads(decrypt(val))
 
 # Types are chosen to be valid on BOTH engines: DOUBLE PRECISION (not REAL) so
 # epoch timestamps keep full precision on Postgres, where REAL is only 4 bytes;
@@ -450,8 +459,9 @@ class AppStore:
         out = []
         for r in rows:
             d = dict(r)
-            for k in ("assumptions", "result_meta", "payload", "context"):
+            for k in ("assumptions", "result_meta", "context"):
                 d[k] = json.loads(d[k]) if d.get(k) else None
+            d["payload"] = _load_payload(d.get("payload"))
             out.append(d)
         return out
 
@@ -485,7 +495,7 @@ class AppStore:
                 "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (qid, user_id, connection_id, question, sql, confidence,
                  json.dumps(assumptions or []), json.dumps(result_meta or {}),
-                 json.dumps(payload or {}), _now(),
+                 encrypt(json.dumps(payload or {})), _now(),
                  conversation_id, turn_index,
                  json.dumps(context) if context is not None else None))
             if conversation_id:
@@ -499,8 +509,9 @@ class AppStore:
         if not r:
             return None
         d = dict(r)
-        for k in ("assumptions", "result_meta", "payload"):
+        for k in ("assumptions", "result_meta"):
             d[k] = json.loads(d[k]) if d.get(k) else None
+        d["payload"] = _load_payload(d.get("payload"))
         return d
 
     def list_queries(self, limit: int = 50, user_id: str | None = None) -> list[dict]:

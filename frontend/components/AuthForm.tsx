@@ -132,6 +132,15 @@ export default function AuthForm({ mode }: { mode: "login" | "signup" }) {
         {busy ? "…" : isSignup ? "Create account" : "Sign in"}
       </button>
 
+      {isSignup && (
+        <p className="mt-3 text-center text-[11px] text-ink-faint">
+          By creating an account you agree to our{" "}
+          <Link href="/legal#terms" className="text-ink-dim hover:underline">Terms</Link>
+          {" "}and{" "}
+          <Link href="/legal#privacy" className="text-ink-dim hover:underline">Privacy Policy</Link>.
+        </p>
+      )}
+
       <p className="mt-4 text-center text-xs text-ink-dim">
         {isSignup ? (
           <>

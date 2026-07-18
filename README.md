@@ -44,9 +44,12 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 
 ## Open source: `sqlguard` — the safety layer as a standalone package
 
+[![CI](https://github.com/krish2105/sqlguard/actions/workflows/ci.yml/badge.svg)](https://github.com/krish2105/sqlguard/actions/workflows/ci.yml)
+
 The five-layer text-to-SQL guard is extracted into its own MIT-licensed,
-`pip install`-able package — **[`packages/sqlguard`](packages/sqlguard)** — so
-anyone building text-to-SQL can drop it in front of their own LLM + database:
+`pip install`-able package — **[`github.com/krish2105/sqlguard`](https://github.com/krish2105/sqlguard)**
+(mirrored in this repo at [`packages/sqlguard`](packages/sqlguard)) — so anyone
+building text-to-SQL can drop it in front of their own LLM + database:
 
 ```python
 from sqlguard import SqlGuard
@@ -58,7 +61,8 @@ guard.check("DROP TABLE orders").allowed           # False
 Its only dependency is `sqlglot`, it blocks **100% of the adversarial red-team
 set** (same eval, run in its own CI across Python 3.10–3.13), ships a CLI
 (`sqlguard check "…"`), and is build-verified + `twine check`-clean, ready for
-PyPI. See [`packages/sqlguard/README.md`](packages/sqlguard/README.md).
+PyPI. See the [standalone repo](https://github.com/krish2105/sqlguard) or
+[`packages/sqlguard/README.md`](packages/sqlguard/README.md).
 
 ## Measured results (`make eval`)
 

@@ -37,9 +37,9 @@ test = ["pytest>=8"]
 sqlguard = "sqlguard.cli:main"
 
 [project.urls]
-Homepage = "https://github.com/krish2105/NexusBI/tree/main/packages/sqlguard"
-Source = "https://github.com/krish2105/NexusBI"
-Issues = "https://github.com/krish2105/NexusBI/issues"
+Homepage = "https://github.com/krish2105/sqlguard"
+Source = "https://github.com/krish2105/sqlguard"
+Issues = "https://github.com/krish2105/sqlguard/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/sqlguard"]

@@ -4,10 +4,15 @@
 destructive or exfiltrating queries *impossible by construction* — before you
 ever execute them.
 
+[![CI](https://github.com/krish2105/sqlguard/actions/workflows/ci.yml/badge.svg)](https://github.com/krish2105/sqlguard/actions/workflows/ci.yml)
 ![tests](https://img.shields.io/badge/adversarial%20queries%20blocked-100%25-34D399)
 ![python](https://img.shields.io/badge/python-3.10%2B-6366F1)
 ![deps](https://img.shields.io/badge/deps-sqlglot%20only-22D3EE)
 ![license](https://img.shields.io/badge/license-MIT-9BA3B4)
+
+> **This package is mirrored from its standalone home:
+> [github.com/krish2105/sqlguard](https://github.com/krish2105/sqlguard)** —
+> file issues/PRs there.
 
 Text-to-SQL's real risk isn't a *wrong* answer — it's a **destructive or
 exfiltrating** one: `DROP TABLE`, `DELETE`, a write-CTE, `pg_read_file('/etc/passwd')`,

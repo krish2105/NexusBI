@@ -8,10 +8,10 @@ from __future__ import annotations
 
 from functools import lru_cache
 from pathlib import Path
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import Field
-from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import Field, field_validator
+from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 BACKEND_ROOT = Path(__file__).resolve().parent.parent
 DATA_DIR = BACKEND_ROOT / "data" / "olist"
@@ -34,9 +34,19 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expire_minutes: int = 60 * 24 * 7
     encryption_key: str | None = None          # for DSN encryption at rest
-    cors_origins: list[str] = Field(
+    # NoDecode: skip pydantic-settings' default JSON-decode of list-typed env
+    # vars, since hosting UIs (Render, etc.) only let you type a plain
+    # comma-separated string, not JSON, into an env var field.
+    cors_origins: Annotated[list[str], NoDecode] = Field(
         default=["http://localhost:3000", "http://127.0.0.1:3000"]
     )
+
+    @field_validator("cors_origins", mode="before")
+    @classmethod
+    def _split_cors_origins(cls, v: object) -> object:
+        if isinstance(v, str):
+            return [origin.strip() for origin in v.split(",") if origin.strip()]
+        return v
     # Allow connections to loopback/private hosts (dev only). Off = SSRF-safe.
     allow_local_targets: bool = False
     # Require a valid API key / JWT to create connections & run custom queries.

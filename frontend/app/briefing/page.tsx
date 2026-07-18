@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import {
@@ -14,6 +13,8 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { getBriefing } from "@/lib/api";
+import { useResource } from "@/lib/useResource";
+import { ErrorState } from "@/components/States";
 import Sparkline from "@/components/Sparkline";
 import type { Briefing, BriefingMetric } from "@/lib/types";
 
@@ -25,17 +26,9 @@ function greeting() {
 }
 
 export default function BriefingPage() {
-  const [b, setB] = useState<Briefing | null>(null);
-  const [loading, setLoading] = useState(true);
-
-  const load = () => {
-    setLoading(true);
-    getBriefing()
-      .then(setB)
-      .catch(() => {})
-      .finally(() => setLoading(false));
-  };
-  useEffect(load, []);
+  const { data: b, loading, error, reload } = useResource<Briefing>(() =>
+    getBriefing(),
+  );
 
   if (loading)
     return (
@@ -44,6 +37,13 @@ export default function BriefingPage() {
           <span className="h-2 w-2 animate-pulse rounded-full bg-indigo" />
           Nexus is analysing your business…
         </div>
+      </main>
+    );
+
+  if (error)
+    return (
+      <main className="mx-auto max-w-3xl px-4 pt-28">
+        <ErrorState message={error.message} onRetry={reload} />
       </main>
     );
 
@@ -66,7 +66,7 @@ export default function BriefingPage() {
             <Sparkles className="h-3.5 w-3.5 text-indigo" /> Proactive · as of {b.as_of}
           </span>
           <button
-            onClick={load}
+            onClick={reload}
             className="focus-ring flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-xs text-ink-dim hover:text-ink"
           >
             <RefreshCw className="h-3.5 w-3.5" /> Refresh

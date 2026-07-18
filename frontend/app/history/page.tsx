@@ -1,17 +1,22 @@
 "use client";
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { History as HistoryIcon, ShieldCheck, ShieldAlert } from "lucide-react";
 import { getHistory, getAudit } from "@/lib/api";
+import { useResource } from "@/lib/useResource";
+import { CardSkeleton, EmptyState, ErrorState } from "@/components/States";
 
 export default function HistoryPage() {
-  const [queries, setQueries] = useState<any[]>([]);
-  const [audit, setAudit] = useState<any[]>([]);
-
-  useEffect(() => {
-    getHistory().then(setQueries).catch(() => {});
-    getAudit().then(setAudit).catch(() => {});
-  }, []);
+  const {
+    data,
+    loading,
+    error,
+    reload,
+  } = useResource<{ queries: any[]; audit: any[] }>(async () => {
+    const [queries, audit] = await Promise.all([getHistory(), getAudit()]);
+    return { queries, audit };
+  });
+  const queries = data?.queries ?? [];
+  const audit = data?.audit ?? [];
 
   const badge = (c: string) =>
     c === "HIGH" ? "text-pos" : c === "MEDIUM" ? "text-amber" : "text-neg";
@@ -26,12 +31,32 @@ export default function HistoryPage() {
         every executed and blocked query.
       </p>
 
+      {error && (
+        <div className="mt-8">
+          <ErrorState message={error.message} onRetry={reload} />
+        </div>
+      )}
+
+      {!error && (
       <div className="mt-8 grid gap-6 lg:grid-cols-2">
         <section>
           <h2 className="mb-3 text-lg font-medium">Questions</h2>
           <div className="flex flex-col gap-2">
-            {queries.length === 0 && <p className="text-sm text-ink-faint">No queries yet.</p>}
-            {queries.map((q, i) => (
+            {loading && (
+              <>
+                <CardSkeleton />
+                <CardSkeleton />
+              </>
+            )}
+            {!loading && queries.length === 0 && (
+              <EmptyState
+                icon={HistoryIcon}
+                title="No queries yet"
+                hint="Ask a question in the workspace and it'll appear here."
+              />
+            )}
+            {!loading &&
+              queries.map((q, i) => (
               <motion.div
                 key={q.id}
                 initial={{ opacity: 0, x: -8 }}
@@ -60,7 +85,12 @@ export default function HistoryPage() {
         <section>
           <h2 className="mb-3 text-lg font-medium">Audit log</h2>
           <div className="flex flex-col gap-1.5">
-            {audit.map((a) => (
+            {loading && <CardSkeleton />}
+            {!loading && audit.length === 0 && (
+              <p className="text-sm text-ink-faint">No audit entries yet.</p>
+            )}
+            {!loading &&
+              audit.map((a) => (
               <div
                 key={a.id}
                 className="flex items-center gap-3 rounded-lg border border-line bg-surface/40 px-3 py-2 text-xs"
@@ -82,6 +112,7 @@ export default function HistoryPage() {
           </div>
         </section>
       </div>
+      )}
     </main>
   );
 }

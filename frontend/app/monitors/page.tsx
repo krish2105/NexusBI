@@ -9,6 +9,7 @@ import {
   runMonitor,
   runAllMonitors,
 } from "@/lib/api";
+import { CardSkeleton, EmptyState, ErrorState } from "@/components/States";
 
 export default function Monitors() {
   const [monitors, setMonitors] = useState<any[]>([]);
@@ -17,14 +18,23 @@ export default function Monitors() {
   const [question, setQuestion] = useState("Show monthly merchandise revenue over time");
   const [busy, setBusy] = useState(false);
   const [runningAll, setRunningAll] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
 
+  // Post-mutation refresh (doesn't flip the initial-load skeleton).
   const refresh = async () => {
-    setMonitors(await getMonitors().catch(() => []));
-    setAlerts(await getAlerts().catch(() => []));
+    const [m, a] = await Promise.all([getMonitors(), getAlerts()]);
+    setMonitors(m);
+    setAlerts(a);
   };
-  useEffect(() => {
-    refresh();
-  }, []);
+  const load = () => {
+    setLoading(true);
+    setErr(null);
+    refresh()
+      .catch((e) => setErr(e instanceof Error ? e.message : "failed to load"))
+      .finally(() => setLoading(false));
+  };
+  useEffect(load, []);
 
   const add = async () => {
     if (!name.trim() || !question.trim()) return;
@@ -100,10 +110,24 @@ export default function Monitors() {
         <section>
           <h2 className="mb-3 text-lg font-medium">Monitors ({monitors.length})</h2>
           <div className="flex flex-col gap-2">
-            {monitors.length === 0 && (
-              <p className="text-sm text-ink-faint">No monitors yet.</p>
+            {loading && (
+              <>
+                <CardSkeleton />
+                <CardSkeleton />
+              </>
             )}
-            {monitors.map((m) => (
+            {!loading && err && (
+              <ErrorState message={err} onRetry={load} />
+            )}
+            {!loading && !err && monitors.length === 0 && (
+              <EmptyState
+                icon={Radar}
+                title="No monitors yet"
+                hint="Add a question above to watch a metric on a schedule."
+              />
+            )}
+            {!loading &&
+              monitors.map((m) => (
               <div key={m.id} className="card flex items-center justify-between p-4">
                 <div className="min-w-0">
                   <p className="font-medium">{m.name}</p>
@@ -132,7 +156,8 @@ export default function Monitors() {
             <Bell className="h-5 w-5 text-amber" /> Alert inbox ({alerts.length})
           </h2>
           <div className="flex flex-col gap-2">
-            {alerts.length === 0 && (
+            {loading && <CardSkeleton />}
+            {!loading && !err && alerts.length === 0 && (
               <div className="flex items-center gap-2 rounded-xl border border-pos/25 bg-pos/5 px-4 py-3 text-sm text-ink-dim">
                 <CheckCircle2 className="h-4 w-4 text-pos" /> No alerts — all monitored
                 metrics are within range.

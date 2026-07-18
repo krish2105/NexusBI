@@ -1,10 +1,12 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "motion/react";
 import { LayoutGrid, ArrowRight, Sparkles, Loader2, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { generateDashboard } from "@/lib/api";
+import { generateDashboard, getDashboards } from "@/lib/api";
+import { useResource } from "@/lib/useResource";
+import { Skeleton } from "@/components/States";
 
 const IDEAS = [
   "An executive overview",
@@ -14,20 +16,15 @@ const IDEAS = [
 ];
 
 export default function Dashboards() {
-  const [dashboards, setDashboards] = useState<any[]>([]);
   const [desc, setDesc] = useState("");
   const [busy, setBusy] = useState(false);
   const router = useRouter();
   const inputRef = useRef<HTMLInputElement>(null);
-
-  const load = () =>
-    fetch("/api/dashboards")
-      .then((r) => r.json())
-      .then((d) => setDashboards(d.dashboards || []))
-      .catch(() => {});
-  useEffect(() => {
-    load();
-  }, []);
+  // Uses the shared API base (works in prod where the frontend calls the backend
+  // directly), with proper loading/error state instead of a swallowed fetch.
+  const { data: dashboards, loading, error, reload } = useResource<any[]>(() =>
+    getDashboards(),
+  );
 
   const generate = async (d: string) => {
     if (!d.trim() || busy) return;
@@ -93,13 +90,26 @@ export default function Dashboards() {
       </div>
 
       {/* existing dashboards */}
-      {dashboards.length > 0 && (
+      {(loading || error || (dashboards && dashboards.length > 0)) && (
         <div className="mt-10">
-          <h2 className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-faint">
+          <h2 className="mb-3 flex items-center gap-3 text-sm font-semibold uppercase tracking-wide text-ink-faint">
             Your dashboards
+            {error && (
+              <button
+                onClick={reload}
+                className="focus-ring rounded border border-line px-2 py-0.5 text-[11px] normal-case text-ink-dim hover:text-ink"
+              >
+                failed to load — retry
+              </button>
+            )}
           </h2>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {dashboards.map((d, i) => (
+            {loading &&
+              Array.from({ length: 3 }).map((_, i) => (
+                <Skeleton key={i} className="h-[92px] w-full" />
+              ))}
+            {!loading &&
+              (dashboards ?? []).map((d, i) => (
               <motion.div
                 key={d.id}
                 initial={{ opacity: 0, y: 12 }}

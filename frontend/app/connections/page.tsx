@@ -1,5 +1,5 @@
 "use client";
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { motion } from "motion/react";
 import Link from "next/link";
 import {
@@ -14,10 +14,21 @@ import {
   Plug,
 } from "lucide-react";
 import { getSchema, getEvals, uploadCsv, connectDatabase } from "@/lib/api";
+import { useResource } from "@/lib/useResource";
+import { CardSkeleton, ErrorState } from "@/components/States";
 
 export default function Connections() {
-  const [schema, setSchema] = useState<any>(null);
-  const [evals, setEvals] = useState<any>(null);
+  const {
+    data: meta,
+    loading: schemaLoading,
+    error: schemaError,
+    reload: reloadSchema,
+  } = useResource<{ schema: any; evals: any }>(async () => {
+    const [schema, evals] = await Promise.all([getSchema(), getEvals()]);
+    return { schema, evals };
+  });
+  const schema = meta?.schema;
+  const evals = meta?.evals;
   const [open, setOpen] = useState<string | null>("orders");
   const [uploading, setUploading] = useState(false);
   const [uploaded, setUploaded] = useState<any>(null);
@@ -43,11 +54,6 @@ export default function Connections() {
       setConnecting(false);
     }
   };
-
-  useEffect(() => {
-    getSchema().then(setSchema).catch(() => {});
-    getEvals().then(setEvals).catch(() => {});
-  }, []);
 
   const onFiles = async (files: FileList | null) => {
     if (!files || !files.length) return;
@@ -210,6 +216,17 @@ export default function Connections() {
       )}
 
       {/* Schema explorer */}
+      {schemaLoading && (
+        <div className="mt-8 grid gap-3">
+          <CardSkeleton />
+          <CardSkeleton />
+        </div>
+      )}
+      {!schemaLoading && schemaError && (
+        <div className="mt-8">
+          <ErrorState message={schemaError.message} onRetry={reloadSchema} />
+        </div>
+      )}
       {schema && (
         <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_360px]">
           <section>

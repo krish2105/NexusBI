@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import {
   ShieldCheck,
@@ -11,6 +10,8 @@ import {
   Activity,
 } from "lucide-react";
 import { getTrust } from "@/lib/api";
+import { useResource } from "@/lib/useResource";
+import { ErrorState, PageLoading } from "@/components/States";
 
 const reveal = {
   initial: { opacity: 0, y: 16 },
@@ -20,11 +21,14 @@ const reveal = {
 };
 
 export default function Trust() {
-  const [t, setT] = useState<any>(null);
-  useEffect(() => {
-    getTrust().then(setT).catch(() => {});
-  }, []);
-  if (!t) return <main className="pt-28 text-center text-ink-dim">Loading…</main>;
+  const { data: t, loading, error, reload } = useResource<any>(() => getTrust());
+  if (loading) return <PageLoading />;
+  if (error || !t)
+    return (
+      <main className="mx-auto max-w-6xl px-4 pt-28">
+        <ErrorState message={error?.message} onRetry={reload} />
+      </main>
+    );
 
   const pct = (v: any) => (v == null ? "—" : `${Math.round(v * 100)}%`);
   const safety = t.safety || {};

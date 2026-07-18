@@ -136,6 +136,12 @@ export async function getEvals() {
   return await r.json();
 }
 
+export async function getDashboards() {
+  const r = await fetch(`${BASE}/dashboards`);
+  if (!r.ok) throw new Error("failed to load dashboards");
+  return (await r.json()).dashboards as any[];
+}
+
 export async function createDashboard(name: string) {
   const r = await fetch(`${BASE}/dashboards`, {
     method: "POST",

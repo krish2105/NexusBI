@@ -1,5 +1,4 @@
 "use client";
-import { useEffect, useState } from "react";
 import { motion } from "motion/react";
 import { Users } from "lucide-react";
 import {
@@ -13,6 +12,8 @@ import {
   Cell,
 } from "recharts";
 import { getSegments } from "@/lib/api";
+import { useResource } from "@/lib/useResource";
+import { ErrorState, PageLoading } from "@/components/States";
 
 const COLORS: Record<string, string> = {
   Champions: "#34D399",
@@ -26,13 +27,15 @@ const COLORS: Record<string, string> = {
 };
 
 export default function Segments() {
-  const [data, setData] = useState<any>(null);
-  useEffect(() => {
-    getSegments().then(setData).catch(() => {});
-  }, []);
+  const { data, loading, error, reload } = useResource<any>(() => getSegments());
 
-  if (!data)
-    return <main className="pt-28 text-center text-ink-dim">Loading segments…</main>;
+  if (loading) return <PageLoading />;
+  if (error || !data)
+    return (
+      <main className="mx-auto max-w-6xl px-4 pt-28">
+        <ErrorState message={error?.message} onRetry={reload} />
+      </main>
+    );
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-20 pt-28">

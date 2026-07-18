@@ -104,5 +104,25 @@ OAuth. Budget **~20 minutes**.
 
 Both platforms keep prior deploys. Render: Deploys tab → redeploy an older
 commit. Vercel: Deployments tab → promote a previous deployment to Production.
-Nothing here is destructive to your data — the app DB and target DB are
-untouched by a redeploy.
+
+## Known limitation: app-state is ephemeral on Render's free plan
+
+Two different databases are in play, and they behave differently on redeploy:
+
+- **Target DB** (`nexus_demo.db`, the Olist data you query) is baked into the
+  Docker image at build time (`backend/Dockerfile`) — identical and intact on
+  every deploy. The core "ask the demo a question" experience is unaffected.
+- **App DB** (`nexus_app.db` — users, saved connections + encrypted DSNs,
+  audit log, monitors, feedback, dashboards, query history, uploaded CSVs) is
+  SQLite on Render's container filesystem, which is **not persistent** on the
+  free plan. `AppStore` currently hard-asserts `sqlite:///` (no Postgres
+  adapter yet), and `get_store()` re-initializes an empty schema on every cold
+  start / redeploy (`backend/app/main.py`). So anything a user creates —
+  their own connection, a monitor, feedback, history — resets on the next
+  15-minute idle spin-down or redeploy.
+
+For a portfolio demo this is usually invisible (visitors click around for a
+few minutes). To make it durable, point `APP_DB_URL` at a free managed
+Postgres (Supabase or Neon both have $0 tiers) — this requires adding a
+Postgres code path to `AppStore` first, which is not yet built. See
+`docs/ASSESSMENT.md` (P0) for the full plan.

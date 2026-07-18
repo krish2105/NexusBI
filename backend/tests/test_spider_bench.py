@@ -6,6 +6,8 @@ Spider-format fixture and checks execution accuracy is measured correctly.
 from __future__ import annotations
 
 import json
+import os
+from pathlib import Path
 
 import pytest
 
@@ -137,3 +139,60 @@ def test_fixture_answers_single_table_aggregations(report):
               "What is the total amount across all orders?",
               "How many singers are there from each country?"):
         assert by_q[q]["status"] == "correct", f"regressed on: {q}"
+
+
+# ------------------------------------------------------------- determinism
+def test_benchmark_is_deterministic_across_hash_seeds():
+    """The benchmark score (and the SQL behind it) must not depend on
+    PYTHONHASHSEED.
+
+    Regression for a real bug: the catalog built its table map by iterating a
+    *set* of table names, so `catalog.tables` insertion order — and therefore
+    every downstream tie-break (schema retrieval, base-table choice) — varied
+    per process. The same fixture scored anywhere from 7/14 to 9/14 run to run,
+    which also meant a user could get different SQL for the same question after
+    a restart. Runs in subprocesses because PYTHONHASHSEED is fixed at
+    interpreter start and cannot be changed in-process.
+    """
+    import subprocess
+    import sys
+
+    prog = (
+        "import json, hashlib;"
+        "from evals.spider_bench import run_benchmark;"
+        "r = run_benchmark(None);"
+        "p = json.dumps([(d['question'], d['status'], d.get('predicted_sql'))"
+        "                for d in r['details']], sort_keys=True);"
+        "print(hashlib.sha256(p.encode()).hexdigest(), r['correct'])"
+    )
+    fingerprints = set()
+    for seed in ("0", "1", "12345"):
+        env = {**os.environ, "PYTHONHASHSEED": seed}
+        out = subprocess.run([sys.executable, "-c", prog], capture_output=True,
+                             text=True, env=env,
+                             cwd=Path(__file__).resolve().parent.parent)
+        assert out.returncode == 0, f"seed {seed} failed:\n{out.stderr[-2000:]}"
+        fingerprints.add(out.stdout.strip())
+    assert len(fingerprints) == 1, (
+        f"benchmark is hash-seed dependent; got {len(fingerprints)} distinct "
+        f"results: {fingerprints}")
+
+
+def test_catalog_table_order_is_sorted():
+    """The root cause, pinned directly: catalog table order must be stable
+    (sorted), not set-iteration order."""
+    import sqlite3
+    import tempfile
+
+    from app.db.target_pool import TargetPool
+    from app.rag.catalog import build_catalog
+
+    path = Path(tempfile.mkdtemp()) / "t.sqlite"
+    con = sqlite3.connect(path)
+    con.executescript("CREATE TABLE zebra (id INT); CREATE TABLE alpha (id INT);"
+                      "CREATE TABLE middle (id INT);")
+    con.commit()
+    con.close()
+    cat = build_catalog(TargetPool(url=f"sqlite:///{path}"), with_samples=False,
+                        use_reference_dictionary=False)
+    assert list(cat.tables.keys()) == ["alpha", "middle", "zebra"]

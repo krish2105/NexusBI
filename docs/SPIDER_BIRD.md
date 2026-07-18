@@ -66,6 +66,23 @@ Each run writes `evals/spider_report.json`: overall EX, a per-difficulty
 breakdown, counts of blocked / skipped / gold-error rows, and per-question
 detail (predicted SQL, gold SQL, verdict).
 
+## Reproducibility
+
+**The benchmark is deterministic: the same fixture yields the same score and the
+same generated SQL on every run, on any machine, under any `PYTHONHASHSEED`.**
+This is enforced by a test (`tests/test_spider_bench.py`) that runs the benchmark
+in subprocesses under several hash seeds and asserts the per-question SQL is
+byte-identical.
+
+That guarantee had to be earned. The catalog originally built its table map by
+iterating a **set** of table names, so `catalog.tables` insertion order — and
+with it every downstream tie-break (schema retrieval, base-table choice) —
+varied between processes. The same fixture scored anywhere from 7/14 to 9/14 run
+to run. Worse, it wasn't only a benchmark artifact: a user could ask the same
+question twice, across a restart, and get different SQL. The fix sorts that
+iteration and makes base-table selection tie-break explicitly, so scores are
+comparable across runs and a benchmark number means something.
+
 ## Interpreting the number — generator mode matters
 
 The report always records `generator_mode`. **Zero-key (deterministic)** is the

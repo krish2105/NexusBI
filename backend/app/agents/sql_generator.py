@@ -84,6 +84,15 @@ def _sing(t: str) -> str:
     return t[:-1] if t.endswith("s") and len(t) > 3 else t
 
 
+def _stems_of(tokens: set[str]) -> set[str]:
+    """Singularized token set, so 'singers' matches the `singer` table."""
+    return {_sing(t) for t in tokens}
+
+
+def _stems(s: str) -> set[str]:
+    return _stems_of(_toks(s))
+
+
 def _col_matches(colname: str, q_tokens: set[str]) -> bool:
     """Fuzzy singular/plural-aware match of a column against question tokens."""
     q_stems = {_sing(t) for t in q_tokens}
@@ -138,12 +147,27 @@ def synthesize_generic(question: str, plan: dict, schema: RetrievedSchema,
     q_tokens = _toks(question)
     assumptions: list[str] = []
 
-    # 1) Base table: best column/name overlap with the question.
+    # 1) Base table: best name/column overlap with the question.
+    #  * Name matching is singular/plural-aware (as column matching already is),
+    #    so "How many singers" resolves to the `singer` table instead of tying at
+    #    zero with every other table.
+    #  * A matching *measure* (numeric) column outweighs a matching label column:
+    #    the base should be the fact table carrying the thing being aggregated,
+    #    while a matching label usually belongs to a dimension table we join to.
+    #    ("total revenue by category" -> base `sales`, joined to `products`.)
+    q_stems = _stems_of(q_tokens)
+
     def tscore(t):
-        s = len(_toks(t.name) & q_tokens) * 2
-        s += sum(1 for c in t.columns if _toks(c.name) & q_tokens)
+        s = 2 * len(_stems(t.name) & q_stems)
+        measures = set(_classify_cols(t)[1])
+        for c in t.columns:
+            if _toks(c.name) & q_tokens:
+                s += 2 if c.name in measures else 1
         return s
-    table = max(schema.tables, key=tscore)
+    # Explicit tie-break on name: `max` returns the FIRST maximal element, so a
+    # remaining tie would otherwise be decided by upstream ordering. Deterministic
+    # by construction, independent of how the schema list was assembled.
+    table = min(schema.tables, key=lambda t: (-tscore(t), t.name.lower()))
     if tscore(table) == 0:
         assumptions.append(f"Question didn't name a table; used '{table.name}'.")
     base = table.name

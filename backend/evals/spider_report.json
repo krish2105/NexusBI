@@ -4,14 +4,14 @@
   "dataset_format": "spider",
   "generator_mode": "deterministic",
   "total": 14,
-  "correct": 6,
-  "execution_accuracy": 0.4286,
+  "correct": 9,
+  "execution_accuracy": 0.6429,
   "blocked": 0,
   "skipped": 0,
   "gold_errors": 0,
   "accuracy_by_difficulty": {
-    "easy": 0.6667,
-    "hard": 0.0,
+    "easy": 1.0,
+    "hard": 0.25,
     "medium": 0.5
   },
   "elapsed_s": 0.02,
@@ -22,9 +22,9 @@
       "db_id": "music_festival",
       "question": "How many singers are there?",
       "difficulty": "easy",
-      "status": "wrong",
+      "status": "correct",
       "generator": "deterministic",
-      "predicted_sql": "SELECT   COUNT(*) AS row_count FROM \"concert\" LIMIT 10000",
+      "predicted_sql": "SELECT   COUNT(*) AS row_count FROM \"singer\" LIMIT 10000",
       "gold_sql": "SELECT COUNT(*) FROM singer",
       "gold_rows": 1,
       "pred_rows": 1
@@ -110,9 +110,9 @@
       "db_id": "store_sales",
       "question": "How many customers are there?",
       "difficulty": "easy",
-      "status": "wrong",
+      "status": "correct",
       "generator": "deterministic",
-      "predicted_sql": "SELECT   COUNT(*) AS row_count FROM \"sales_order\" LIMIT 10000",
+      "predicted_sql": "SELECT   COUNT(*) AS row_count FROM \"customer\" LIMIT 10000",
       "gold_sql": "SELECT COUNT(*) FROM customer",
       "gold_rows": 1,
       "pred_rows": 1
@@ -154,12 +154,12 @@
       "db_id": "store_sales",
       "question": "What is the total order amount for each customer city?",
       "difficulty": "hard",
-      "status": "wrong",
+      "status": "correct",
       "generator": "deterministic",
-      "predicted_sql": "SELECT   SUM(\"amount\") AS sum_amount FROM \"sales_order\" LIMIT 10000",
+      "predicted_sql": "SELECT   \"customer\".\"city\" AS city,   SUM(\"sales_order\".\"amount\") AS sum_amount FROM \"sales_order\" JOIN customer   ON sales_order.customer_id = customer.customer_id GROUP BY   \"customer\".\"city\" ORDER BY   sum_amount DESC NULLS FIRST LIMIT 50",
       "gold_sql": "SELECT T2.city, SUM(T1.amount) FROM sales_order AS T1 JOIN customer AS T2 ON T1.customer_id = T2.customer_id GROUP BY T2.city",
       "gold_rows": 3,
-      "pred_rows": 1
+      "pred_rows": 3
     },
     {
       "db_id": "store_sales",

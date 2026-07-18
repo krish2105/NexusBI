@@ -92,6 +92,10 @@ def retrieve_schema(question: str, connection_url: str | None = None,
             s += 4.0
         tbl_scored.append((t, s))
 
+    # Stable sort: ties keep catalog order, which build_catalog now guarantees is
+    # deterministic (dictionary order, then sorted table names). Deliberately NOT
+    # tie-broken on name — that would override the data dictionary's meaningful
+    # ordering and measurably hurt retrieval on the demo schema.
     tbl_scored.sort(key=lambda x: -x[1])
     chosen: list[Table] = []
     scores: dict[str, float] = {}

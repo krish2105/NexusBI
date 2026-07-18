@@ -132,11 +132,17 @@ def build_catalog(pool: TargetPool | None = None, with_samples: bool = True,
         glossary = _load_glossary(gloss_path) if gloss_path.exists() else []
     else:
         dd, glossary = {}, []
-    live_tables = {t.lower() for t in pool.list_tables()}
+    # Sorted, not a set: set iteration order over strings varies with
+    # PYTHONHASHSEED, which would make the catalog's table order (and therefore
+    # every downstream tie-break — schema retrieval, base-table choice, the
+    # generated SQL itself) differ between processes. Determinism is a product
+    # guarantee here, not a nicety.
+    live_tables = sorted({t.lower() for t in pool.list_tables()})
+    live_set = set(live_tables)
 
     tables: dict[str, Table] = {}
     for tname, meta in dd.items():
-        if tname.lower() not in live_tables:
+        if tname.lower() not in live_set:
             continue  # dictionary describes tables not loaded in the SQLite demo
         live_cols = {c.lower() for c, _ in pool.table_columns(tname)}
         cols: list[Column] = []

@@ -12,6 +12,10 @@ Agentic Decision Intelligence · five-layer text-to-SQL safety · hybrid-RAG sch
 ![free tier](https://img.shields.io/badge/API%20keys-0%20required-22D3EE)
 ![license](https://img.shields.io/badge/data-CC%20BY--NC--SA%204.0-9BA3B4)
 
+### **[▶ Try it live](https://nexus-bi-iota.vercel.app/app?q=Top%205%20categories%20by%20merchandise%20revenue)** · [Case study](docs/CASE_STUDY.md) · [90-second tour](docs/DEMO.md) · [API health](https://nexus-bi-backend.onrender.com/health)
+
+*No signup, no key. Click the link, watch the agent write SQL and answer — then try `delete all orders` and watch it get blocked.<br/>Free-tier backend sleeps when idle; the first request wakes it in ~30s.*
+
 ![Nexus BI](docs/img/landing.png)
 
 </div>
@@ -44,6 +48,10 @@ question before a model ever sees it.
 <td width="50%"><b>Customer segments</b> — real RFM segmentation.<br/><br/><img src="docs/img/segments.png" alt="Customer segments"/></td>
 </tr>
 </table>
+
+**First-class light theme** — *designed*, not color-inverted (own token palette, themed charts, `prefers-color-scheme`-aware). The same workspace, light:
+
+![Workspace in light theme](docs/img/workspace-light.png)
 
 ---
 
@@ -100,17 +108,38 @@ implementation of the safety rules, and it's the one you `pip install`;
 execution dialect, and layer labels. A test asserts the rules resolve to the
 installed package, so the two can never silently drift.
 
-## Measured results (`make eval`)
+## Measured results (`python -m evals.run_evals`)
+
+Every number is reproducible from the repo. Where a result is unflattering, it's here anyway — see the accuracy breakdown below.
 
 | Suite | Result |
 |---|---|
 | **SQL safety** | **100%** (29/29) adversarial queries blocked, control allowed |
-| **Text-to-SQL** | 100% data-integrity; ~49% zero-key generator execution accuracy (higher with a Groq key) |
-| **Spider/BIRD** | end-to-end **execution-accuracy** benchmark (the standard text-to-SQL metric) — runs the whole pipeline, safety gate included, per-database; bundled self-contained fixture + a loader for the full Spider/BIRD dev sets. See [`docs/SPIDER_BIRD.md`](docs/SPIDER_BIRD.md) |
-| **Forecast** | **rolling-origin (walk-forward) head-to-head** vs a seasonal-naive reference on daily + monthly grains; RMSE/MAE, zero-masked MAPE, and measured 95% band coverage. Optional PyTorch **LSTM** variant beats Holt-Winters on the ~700-pt daily series (RMSE 9.7k vs 10.2k, ~94% band coverage vs an over-wide 100%). See [`docs/FORECASTING.md`](docs/FORECASTING.md) |
-| **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `183 passed, 6 skipped (live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting, semantic layer, join-graph generalization, determinism, dogfooding |
+| **Text-to-SQL (data integrity)** | **100%** (39/39) — the package's validated SQL returns the labeled row counts |
+| **Text-to-SQL (zero-key generator)** | **49%** overall execution accuracy — see the honest breakdown below |
+| **Spider/BIRD** | **64%** (9/14) end-to-end execution accuracy on the bundled fixture; full pipeline incl. safety gate; deterministic across seeds. Loader for the full dev sets included. See [`docs/SPIDER_BIRD.md`](docs/SPIDER_BIRD.md) |
+| **Forecast** | **rolling-origin (walk-forward)** vs seasonal-naive; MAPE 15.4%. Optional PyTorch **LSTM** beats Holt-Winters on the ~700-pt daily series (RMSE 9.7k vs 10.2k, ~94% band coverage vs an over-wide 100%). See [`docs/FORECASTING.md`](docs/FORECASTING.md) |
+| **RAG** | **85%** table recall on the labeled question set |
+| **Tests** | `183 passed, 6 skipped (live-MySQL, skipped in CI)` — safety, read-only enforcement, graph, API, hardening, benchmark, forecasting, semantic layer, join-graph generalization, determinism, dogfooding |
 | **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
+
+### Honest accuracy — by difficulty, with the weak number shown
+
+The zero-key deterministic generator's execution accuracy is **not uniform**, and the honest story is in the split, not the average:
+
+| Difficulty | Zero-key accuracy | What these look like |
+|---|---:|---|
+| **Easy** | **90%** (9/10) | scalars, single-dimension group-bys — "total revenue", "orders by state" |
+| **Medium** | **56%** (9/16) | filters + one join, top-N, time series |
+| **Hard** | **8%** (1/13) | multi-join with `HAVING`, correlated sub-selects, nested aggregation |
+
+**Why publish 8%?** Because a reviewer will find it, and volunteering it is the stronger signal. It's the honest ceiling of a *grounded, keyless* synthesizer: it never hallucinates a table or column (that's what keeps generation always-safe), but it also won't invent the multi-join gymnastics a hard query needs. Three things move it, in order of how I'd actually spend the effort:
+
+1. **The semantic layer** (already shipped, `/metrics`) — if a metric is *certified*, don't synthesize it, serve the governed definition. This sidesteps generation on exactly the queries that matter.
+2. **A free Groq key** — flips the generator to `llama-3.3-70b`; re-run `evals.run_evals` with the key set to see the lift by difficulty.
+3. **A frontier model** — highest ceiling, but reintroduces the per-query COGS the "$0 deterministic" design avoids.
+
+Full methodology and the self-critique that grades all of this: [`docs/CASE_STUDY.md`](docs/CASE_STUDY.md) · [`docs/ASSESSMENT.md`](docs/ASSESSMENT.md).
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres
 

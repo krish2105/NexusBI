@@ -18,7 +18,9 @@ python-multipart==0.0.32
 # The guard itself is our own OSS package — Nexus consumes the SAME artifact it
 # publishes (github.com/krish2105/sqlguard), rather than keeping a second copy of
 # the safety code that could silently drift from it. Pinned to a release tag for
-# reproducibility; swap to `sqlguard==0.1.0` once it's on PyPI.
+# reproducibility.
+# TODO(roadmap 0.3): once published, swap this line to `sqlguard==0.1.0` and drop
+# `git` from backend/Dockerfile. Exact steps: packages/sqlguard/PUBLISHING.md.
 sqlguard @ git+https://github.com/krish2105/sqlguard@v0.1.0
 sqlglot==30.12.0          # AST parser the safety layer depends on — pin is load-bearing
 pandas==3.0.3

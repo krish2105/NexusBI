@@ -16,13 +16,13 @@ knowing whether anyone buys the safety wedge.** Phase 1 and Phase 2 exist to pre
 
 Small, already-unblocked, and two of them are *live-site correctness*.
 
-| # | Task | Why | Owner |
+| # | Task | Why | Owner / status |
 |---|---|---|---|
-| 0.1 | Set `CORS_ORIGIN_REGEX` in the Render dashboard | Code + `render.yaml` are pushed, but Render isn't syncing blueprint env vars — preview/branch Vercel URLs still fail every fetch | **You** (dashboard) |
-| 0.2 | Publish `sqlguard` 0.1.0 to PyPI | Release workflow is built and wheel-verified; needs the one-time "pending publisher" step | **You** (pypi.org) |
-| 0.3 | Swap NexusBI off the git pin → `sqlguard==0.1.0`; drop `git` from the Dockerfile | Smaller image, honest dependency | Me, after 0.2 |
-| 0.4 | Regenerate README screenshots against the new themed UI | Current images predate the light/dark redesign | Me |
-| 0.5 | Add a `?theme=light` capture pass to the screenshot script | Show both themes in the README | Me |
+| 0.1 | Set `CORS_ORIGIN_REGEX` in the Render dashboard | Code + `render.yaml` are pushed, but Render isn't syncing blueprint env vars — preview/branch Vercel URLs still fail every fetch | 🎯 **You** (dashboard) |
+| 0.2 | Publish `sqlguard` 0.1.0 to PyPI | Release workflow is built and wheel-verified; needs the one-time "pending publisher" step | 🎯 **You** (pypi.org) |
+| 0.3 | Swap NexusBI off the git pin → `sqlguard==0.1.0`; drop `git` from the Dockerfile | Smaller image, honest dependency | 📝 **Staged** — exact steps in [`packages/sqlguard/PUBLISHING.md`](../packages/sqlguard/PUBLISHING.md); a one-line flip after 0.2 |
+| 0.4 | Regenerate README screenshots against the new themed UI | Current images predate the light/dark redesign | ✅ **Done** (dark + light) |
+| 0.5 | Add a `?theme=light` capture pass to the screenshot script | Show both themes in the README | ✅ **Done** — `THEME=light npm run screenshots` |
 
 **Exit:** every Vercel URL works, `pip install sqlguard` works, README reflects reality.
 
@@ -33,13 +33,13 @@ Small, already-unblocked, and two of them are *live-site correctness*.
 Assumes **Move A**. Makes the work *legible to a human evaluator* — which is the actual
 bottleneck now that the build quality is high.
 
-| # | Task | Detail |
+| # | Task | Status |
 |---|---|---|
-| 1.1 | **Case study** (`docs/CASE_STUDY.md`) | The 5-layer guard's threat model; why deterministic ML + LLM-narrates-only; the Spider/BIRD determinism bug hunt (a genuinely good story); the Postgres migration. Written for a hiring manager who will skim. |
-| 1.2 | **90-second demo video** | Ask → SQL → chart → narration, then a destructive query getting blocked. The refusal is the money shot. |
-| 1.3 | **README top-fold rewrite** | Live link + demo GIF above the fold. Nobody scrolls. |
-| 1.4 | **Honest accuracy section** | Publish 49%/8%-hard *by difficulty* with the methodology. Volunteering your weakest number is a strong signal — and it pre-empts the reviewer finding it themselves. |
-| 1.5 | **`sqlguard` README polish + launch post** | It's the most reusable artifact; give it its own audience. |
+| 1.1 | **Case study** ([`docs/CASE_STUDY.md`](./CASE_STUDY.md)) — 5-layer guard threat model; deterministic-ML + LLM-narrates-only; the Spider/BIRD determinism bug hunt; the Postgres migration. | ✅ **Done** |
+| 1.2 | **90-second demo video** — ask → SQL → chart → narration, then a destructive query blocked. | ⏸️ Deferred (needs a screen recording) |
+| 1.3 | **README top-fold rewrite** — live "Try it live" link + case-study link above the fold. | ✅ **Done** |
+| 1.4 | **Honest accuracy section** — 49% overall / 90-56-8% by difficulty, with methodology, in the README + case study. | ✅ **Done** |
+| 1.5 | **`sqlguard` README polish + launch post** ([`packages/sqlguard/LAUNCH.md`](../packages/sqlguard/LAUNCH.md) — HN / dev.to / X / Reddit). | ✅ **Done** |
 
 **Exit:** a stranger understands the project in 90 seconds and can verify every claim.
 
@@ -48,17 +48,18 @@ bottleneck now that the build quality is high.
 ## Phase 2 — Validate the bet (≈1–2 weeks, mostly not coding) 🟡 gates everything after
 
 Assumes **Move B**. This phase is **conversations, not commits.** It exists to answer the one
-question that determines whether Phases 3–5 are worth writing at all.
+question that determines whether Phases 3–5 are worth writing at all. **The kit to run it is
+built — see [`docs/GTM/`](./GTM/).** What's left is the talking, which only you can do.
 
 > **Is "provable safety" a top-3 buying criterion — or a checkbox a read-only role already ticks?**
 > Honest prior: probably the latter.
 
-| # | Task | Detail |
+| # | Task | Status |
 |---|---|---|
-| 2.1 | Name **one** ICP | Panel's lean: mid-market Postgres/MySQL data teams, sold on governance/audit. Not non-technical SMBs. |
-| 2.2 | 5 design-partner conversations | Show the live demo. Ask what they'd pay, not whether they like it. |
-| 2.3 | Try to get **one** read replica connected | Never prod. This is the real test of the thesis. |
-| 2.4 | Write down the verdict | Literally commit the answer to the repo. |
+| 2.1 | Name **one** ICP | ✅ **Done** — [`GTM/ICP.md`](./GTM/ICP.md) (mid-market Postgres/MySQL data teams, sold on governed access + audit) |
+| 2.2 | 5 design-partner conversations | 🎯 **Your move** — templates + Mom-Test script ready in [`GTM/OUTREACH.md`](./GTM/OUTREACH.md) |
+| 2.3 | Try to get **one** read replica connected | 🎯 **Your move** — never prod. The real test of the thesis. |
+| 2.4 | Write down the verdict | 📝 **Scaffolded** — fill + commit [`GTM/VALIDATION_VERDICT.md`](./GTM/VALIDATION_VERDICT.md) |
 
 **Decision gate:**
 - **≥3 of 5 say "a read-only role already does this"** → the wedge is a checkbox. **Stop, or pivot** to the semantic/metrics layer (already half-built) as the primary product.

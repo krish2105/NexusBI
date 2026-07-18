@@ -38,6 +38,26 @@ python -c "import sqlguard; print(sqlguard.__version__)"
 ```
 `https://pypi.org/project/sqlguard/` is now live.
 
+## After publishing — swap NexusBI off the git pin (roadmap 0.3)
+
+NexusBI currently installs `sqlguard` from a **git tag** (so it works before PyPI
+exists). Once `pip install sqlguard` works, make it a real dependency. This is
+mechanical — the two spots are already commented in the code:
+
+1. **`backend/requirements.txt`** — replace the git line with the PyPI pin:
+   ```diff
+   - sqlguard @ git+https://github.com/krish2105/sqlguard@v0.1.0
+   + sqlguard==0.1.0
+   ```
+2. **`backend/Dockerfile`** — `git` was installed *only* to fetch that git pin.
+   With the PyPI pin it's no longer needed; drop it from the `apt-get install` line
+   (smaller image). Its comment already flags this.
+3. Rebuild + verify: `docker build -t nexus-test backend && docker run --rm nexus-test`
+   boots and serves `/health`; run `python -m pytest -q` to confirm the guard still
+   resolves to the installed package (the dogfooding test pins this).
+4. Announce with the copy in [`LAUNCH.md`](./LAUNCH.md) (HN / dev.to / X / Reddit),
+   after confirming `pip install sqlguard` works in a clean venv.
+
 ## Releasing a new version
 1. Bump `version` in `pyproject.toml` **and** `__version__` in `src/sqlguard/__init__.py`.
 2. `python -m pytest -q` (must pass, incl. the 100%-adversarial-blocked eval).

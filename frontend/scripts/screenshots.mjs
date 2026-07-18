@@ -7,8 +7,13 @@
  * a metric value) rather than a fixed delay, so we never capture a skeleton.
  *
  * Usage (backend on :8000 and frontend on :3000 must already be running):
- *     npm run screenshots
+ *     npm run screenshots                 # dark theme -> docs/img/<name>.png
+ *     THEME=light npm run screenshots     # light theme -> docs/img/<name>-light.png
  *     BASE_URL=http://localhost:3001 npm run screenshots
+ *
+ * The theme is driven purely by the browser's `prefers-color-scheme`: the app's
+ * inline theme-init script falls back to it when no `nexus-theme` is stored, so a
+ * fresh Playwright context in `colorScheme: light` renders the real light theme.
  *
  * Deliberately NOT run in CI: it needs the full stack up, and regenerating
  * binaries on every push would churn the repo with useless image diffs.
@@ -24,11 +29,25 @@ const OUT = path.resolve(
   "../../docs/img",
 );
 
+// Dark is canonical (bare filenames); light adds a `-light` suffix so both can
+// coexist in docs/img and the README can show either.
+const THEME = (process.env.THEME || "dark") === "light" ? "light" : "dark";
+const SUFFIX = THEME === "light" ? "-light" : "";
+
 const DESKTOP = { width: 1440, height: 900 };
 const MOBILE = { width: 390, height: 844 };
 
 /** Wait for the page to settle: fonts + animations done, no pending skeletons. */
 async function settle(page, { skeletons = true } = {}) {
+  // Hide Next.js dev-mode overlays (error toast, build/route indicators) so a
+  // dev-only artifact never leaks into a README screenshot. No-op in prod.
+  await page
+    .addStyleTag({
+      content:
+        "nextjs-portal,[data-nextjs-toast],[data-next-badge-root]," +
+        "#__next-build-watcher,[data-nextjs-dialog-overlay]{display:none!important}",
+    })
+    .catch(() => {});
   await page.waitForLoadState("networkidle").catch(() => {});
   if (skeletons) {
     // Our loading placeholders use the `animate-shimmer` utility.
@@ -44,7 +63,7 @@ async function settle(page, { skeletons = true } = {}) {
 }
 
 async function shot(page, name, opts = {}) {
-  const file = path.join(OUT, `${name}.png`);
+  const file = path.join(OUT, `${name}${SUFFIX}.png`);
   await page.screenshot({
     path: file,
     fullPage: opts.fullPage ?? false,
@@ -84,11 +103,11 @@ async function main() {
   const ctx = await browser.newContext({
     viewport: DESKTOP,
     deviceScaleFactor: 2, // crisp on retina / when scaled down in the README
-    colorScheme: "dark",
+    colorScheme: THEME,
     reducedMotion: "reduce", // deterministic: no mid-animation frames
   });
   const page = await ctx.newPage();
-  console.log(`Capturing from ${BASE} -> ${path.relative(process.cwd(), OUT)}`);
+  console.log(`Capturing ${THEME} theme from ${BASE} -> ${path.relative(process.cwd(), OUT)}`);
 
   // --- landing -------------------------------------------------------------
   await page.goto(`${BASE}/`, { waitUntil: "domcontentloaded" });
@@ -147,7 +166,7 @@ async function main() {
   const mctx = await browser.newContext({
     viewport: MOBILE,
     deviceScaleFactor: 2,
-    colorScheme: "dark",
+    colorScheme: THEME,
     reducedMotion: "reduce",
     isMobile: true,
     hasTouch: true,

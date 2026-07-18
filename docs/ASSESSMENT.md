@@ -162,8 +162,8 @@ Durable advantage beyond a copyable safety wedge.
 
 | Track | Workstreams |
 |---|---|
-| Product | **Open-source the safety guard as a standalone "read-only text-to-SQL guardrail" library** (Vanna-adjacent) to seed developer adoption; deepen the semantic layer into a certified-metrics moat. |
-| Backend | Horizontal scale (stateless instances, externalized shared state); generalize the deterministic generator's join graph via introspected FKs for BYO schemas; SSO. |
+| Product | ✅ **Open-sourced the safety guard** as a standalone MIT-licensed library — [`github.com/krish2105/sqlguard`](https://github.com/krish2105/sqlguard), its own repo + CI (4-way Python 3.10–3.13 matrix, all green), `pip install`-able, 35 tests incl. the 100%-adversarial eval + a cross-dialect golden regression suite. ✅ **Semantic/metrics layer shipped** — governed, certified metric definitions + synonyms (`/metrics`), safety-verified on write, badge on answers. Still open: distribution/adoption (stars, PyPI publish — needs your token), deepen metrics into a real certified-numbers moat. |
+| Backend | ✅ **Join graph generalized** — introspected FKs (Postgres/MySQL/SQLite) + name-based inference for FK-less/BYO schemas, replacing the Olist-hardcoded map (curated Olist edges now used only as a last-resort fallback for the demo). Still open: horizontal scale (stateless instances, externalized shared state); SSO. |
 | Frontend | Full account lifecycle; embed/self-host SDK surface; chart data-table a11y toggle. |
 | Ops | SOC2 path (durable exportable audit log underpins it); SLO/error-budget instrumentation; multi-region. |
 | Finance | BYO-key margin optimization; embed/self-host pricing tier; seat + usage hybrid. |
@@ -182,13 +182,15 @@ business costume**.
 There are two rational moves:
 
 - **Move A — Freeze near a polished P0 and use it to get hired.** The craft score already clears
-  the bar. Deploy live (free tier + free managed Postgres for durability), fix mobile nav + error
-  states + the IDOR/SSE holes, pin deps, write the case study. Highest ROI, genuinely ~$0.
-- **Move B — Validate the safety-as-buying-criterion bet before building the SaaS stack.** Pull
-  the P3 OSS-guard move to P0 (cheapest distribution + validation instrument) and take the demo
-  to 5 named mid-market Postgres teams; try to get one to connect a **read replica** (never prod)
-  and pay $29–49/mo. If 3 of 5 say "a read-only role already does this," the wedge is a checkbox →
-  pivot to the semantic/metrics layer or stop.
+  the bar. ✅ Durable Postgres app-store, ✅ mobile nav + error states, ✅ the IDOR/SSE holes closed,
+  ✅ deps pinned (+ Docker/CI version drift fixed). Remaining: deploy live (needs your cloud
+  accounts) + write the case study. Highest ROI, genuinely ~$0.
+- **Move B — Validate the safety-as-buying-criterion bet before building the SaaS stack.**
+  ✅ The OSS-guard move is done — [`sqlguard`](https://github.com/krish2105/sqlguard) is live, its
+  own repo + CI, MIT licensed. Not yet done: take the demo to 5 named mid-market Postgres teams;
+  try to get one to connect a **read replica** (never prod) and pay $29–49/mo. If 3 of 5 say "a
+  read-only role already does this," the wedge is a checkbox → pivot to the semantic/metrics layer
+  (already partially built — see P3) or stop.
 
 Everything between them — writing Stripe/tenancy code now — is burning solo time on a business
 that hasn't earned the right to exist yet.

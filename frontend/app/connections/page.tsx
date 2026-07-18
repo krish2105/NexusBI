@@ -281,7 +281,7 @@ export default function Connections() {
                 <div key={g.term} className="card p-3">
                   <p className="text-sm font-medium">{g.term}</p>
                   <p className="mt-0.5 text-xs text-ink-dim">{g.definition}</p>
-                  <code className="mt-1 block overflow-x-auto rounded bg-[#0E1117] px-2 py-1 font-mono text-[11px] text-cyan">
+                  <code className="code-panel mt-1 block overflow-x-auto rounded px-2 py-1 font-mono text-[11px] !text-[#67E8F9]">
                     {g.canonical_sql}
                   </code>
                 </div>

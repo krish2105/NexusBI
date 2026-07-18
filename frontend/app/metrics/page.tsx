@@ -285,7 +285,7 @@ export default function Metrics() {
                 {m.synonyms.map((s) => (
                   <span
                     key={s}
-                    className="rounded-md bg-white/[0.04] px-1.5 py-0.5 text-ink-dim"
+                    className="rounded-md bg-ink/[0.05] px-1.5 py-0.5 text-ink-dim"
                   >
                     {s}
                   </span>
@@ -299,13 +299,14 @@ export default function Metrics() {
         .metric-input {
           width: 100%;
           border-radius: 0.5rem;
-          border: 1px solid var(--line, rgba(255, 255, 255, 0.08));
-          background: rgba(255, 255, 255, 0.03);
+          border: 1px solid rgb(var(--line));
+          background: rgb(var(--ink) / 0.03);
+          color: rgb(var(--ink));
           padding: 0.5rem 0.75rem;
           font-size: 0.875rem;
         }
         .metric-input:focus {
-          outline: 2px solid rgba(99, 102, 241, 0.5);
+          outline: 2px solid rgb(var(--indigo) / 0.5);
           outline-offset: 1px;
         }
       `}</style>

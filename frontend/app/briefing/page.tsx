@@ -16,9 +16,10 @@ import { getBriefing } from "@/lib/api";
 import { useResource } from "@/lib/useResource";
 import { ErrorState } from "@/components/States";
 import Sparkline from "@/components/Sparkline";
+import { useChartTheme } from "@/lib/chartTheme";
 import type { Briefing, BriefingMetric } from "@/lib/types";
 
-const COLOR = { good: "#34D399", bad: "#F87171", neutral: "#9BA3B4" } as const;
+const TONE = { good: "good", bad: "bad", neutral: "neutral" } as const;
 
 function greeting() {
   const h = new Date().getHours();
@@ -26,6 +27,8 @@ function greeting() {
 }
 
 export default function BriefingPage() {
+  const chart = useChartTheme();
+  const COLOR = { good: chart.pos, bad: chart.neg, neutral: chart.neutral } as const;
   const { data: b, loading, error, reload } = useResource<Briefing>(() =>
     getBriefing(),
   );
@@ -185,8 +188,10 @@ export default function BriefingPage() {
 }
 
 function MetricCard({ m, delay }: { m: BriefingMetric; delay: number }) {
+  const chart = useChartTheme();
   const Icon = m.direction === "up" ? TrendingUp : m.direction === "down" ? TrendingDown : Minus;
-  const c = COLOR[m.sentiment];
+  const c =
+    m.sentiment === "good" ? chart.pos : m.sentiment === "bad" ? chart.neg : chart.neutral;
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -207,7 +212,7 @@ function MetricCard({ m, delay }: { m: BriefingMetric; delay: number }) {
           {m.mom_pct > 0 ? "+" : ""}
           {m.mom_pct}%
         </span>
-        <Sparkline values={m.spark} color={c} />
+        <Sparkline values={m.spark} tone={TONE[m.sentiment]} />
       </div>
     </motion.div>
   );

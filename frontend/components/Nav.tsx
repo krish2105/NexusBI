@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Menu, Sparkles, X } from "lucide-react";
+import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
   { href: "/briefing", label: "Briefing" },
@@ -65,7 +66,7 @@ export default function Nav() {
               {isActive(l.href) && (
                 <motion.span
                   layoutId="nav-active"
-                  className="absolute inset-0 -z-10 rounded-lg bg-white/[0.06]"
+                  className="absolute inset-0 -z-10 rounded-lg bg-ink/[0.07]"
                 />
               )}
               <span className="relative">{l.label}</span>
@@ -74,6 +75,7 @@ export default function Nav() {
         </div>
 
         <div className="flex items-center gap-2">
+          <ThemeToggle />
           <Link
             href="/app"
             className="focus-ring hidden rounded-lg bg-ai-gradient px-4 py-1.5 text-sm font-medium text-white shadow-glow sm:block"
@@ -117,8 +119,8 @@ export default function Nav() {
                     href={l.href}
                     className={`focus-ring rounded-lg px-4 py-3 text-sm transition-colors ${
                       isActive(l.href)
-                        ? "bg-white/[0.06] text-ink"
-                        : "text-ink-dim hover:bg-white/[0.04] hover:text-ink"
+                        ? "bg-ink/[0.07] text-ink"
+                        : "text-ink-dim hover:bg-ink/[0.05] hover:text-ink"
                     }`}
                   >
                     {l.label}

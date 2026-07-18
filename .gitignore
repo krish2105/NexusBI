@@ -30,3 +30,4 @@ backend/data/olist/model_ready/order_items_flat.csv
 .DS_Store
 .idea/
 .vscode/
+.vercel

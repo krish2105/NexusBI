@@ -14,19 +14,7 @@ import {
   YAxis,
 } from "recharts";
 import type { AnalysisResult } from "@/lib/types";
-
-const AX = { stroke: "#5E6678", fontSize: 11 };
-const GRID = "#1B1F2A";
-
-const tip = {
-  contentStyle: {
-    background: "#14171F",
-    border: "1px solid #242A38",
-    borderRadius: 10,
-    fontSize: 12,
-  },
-  labelStyle: { color: "#9BA3B4" },
-};
+import { tooltipProps, useChartTheme } from "@/lib/chartTheme";
 
 function fmt(n: number) {
   if (Math.abs(n) >= 1_000_000) return (n / 1_000_000).toFixed(1) + "M";
@@ -35,8 +23,12 @@ function fmt(n: number) {
 }
 
 export default function AutoChart({ result }: { result: AnalysisResult }) {
+  const c = useChartTheme();
   const { chart_spec, rows, forecast, anomalies } = result;
   const enc = chart_spec.encodings;
+
+  const AX = { fill: c.axis, fontSize: 11 };
+  const tip = tooltipProps(c);
 
   if (chart_spec.type === "line") {
     const x = enc.x as string;
@@ -57,14 +49,14 @@ export default function AutoChart({ result }: { result: AnalysisResult }) {
     return (
       <ResponsiveContainer width="100%" height={300}>
         <ComposedChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
-          <CartesianGrid stroke={GRID} vertical={false} />
-          <XAxis dataKey="label" tick={AX} tickLine={false} axisLine={{ stroke: GRID }} />
+          <CartesianGrid stroke={c.grid} vertical={false} />
+          <XAxis dataKey="label" tick={AX} tickLine={false} axisLine={{ stroke: c.grid }} />
           <YAxis tick={AX} tickLine={false} axisLine={false} tickFormatter={fmt} width={44} />
           <Tooltip {...tip} />
           <defs>
             <linearGradient id="bandFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366F1" stopOpacity={0.25} />
-              <stop offset="100%" stopColor="#6366F1" stopOpacity={0.02} />
+              <stop offset="0%" stopColor={c.indigo} stopOpacity={c.bandOpacity[0]} />
+              <stop offset="100%" stopColor={c.indigo} stopOpacity={c.bandOpacity[1]} />
             </linearGradient>
           </defs>
           <Area
@@ -76,7 +68,7 @@ export default function AutoChart({ result }: { result: AnalysisResult }) {
           />
           <Line
             dataKey="actual"
-            stroke="#22D3EE"
+            stroke={c.cyan}
             strokeWidth={2.2}
             dot={false}
             isAnimationActive
@@ -84,13 +76,13 @@ export default function AutoChart({ result }: { result: AnalysisResult }) {
           />
           <Line
             dataKey="forecast"
-            stroke="#6366F1"
+            stroke={c.indigo}
             strokeWidth={2}
             strokeDasharray="5 4"
             dot={false}
             connectNulls
           />
-          <Scatter dataKey="anomaly" fill="#FBBF24" shape="circle" />
+          <Scatter dataKey="anomaly" fill={c.amber} shape="circle" />
         </ComposedChart>
       </ResponsiveContainer>
     );
@@ -103,23 +95,23 @@ export default function AutoChart({ result }: { result: AnalysisResult }) {
     return (
       <ResponsiveContainer width="100%" height={300}>
         <BarChart data={data} margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
-          <CartesianGrid stroke={GRID} vertical={false} />
+          <CartesianGrid stroke={c.grid} vertical={false} />
           <XAxis
             dataKey="label"
             tick={AX}
             tickLine={false}
-            axisLine={{ stroke: GRID }}
+            axisLine={{ stroke: c.grid }}
             interval={0}
             angle={data.length > 6 ? -25 : 0}
             textAnchor={data.length > 6 ? "end" : "middle"}
             height={data.length > 6 ? 60 : 30}
           />
           <YAxis tick={AX} tickLine={false} axisLine={false} tickFormatter={fmt} width={44} />
-          <Tooltip {...tip} cursor={{ fill: "rgba(99,102,241,0.08)" }} />
+          <Tooltip {...tip} cursor={{ fill: c.cursorFill }} />
           <defs>
             <linearGradient id="barFill" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#6366F1" />
-              <stop offset="100%" stopColor="#22D3EE" />
+              <stop offset="0%" stopColor={c.indigo} />
+              <stop offset="100%" stopColor={c.cyan} />
             </linearGradient>
           </defs>
           <Bar
@@ -141,11 +133,11 @@ export default function AutoChart({ result }: { result: AnalysisResult }) {
     return (
       <ResponsiveContainer width="100%" height={300}>
         <ScatterChart margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
-          <CartesianGrid stroke={GRID} />
-          <XAxis dataKey="x" tick={AX} tickLine={false} axisLine={{ stroke: GRID }} tickFormatter={fmt} />
+          <CartesianGrid stroke={c.grid} />
+          <XAxis dataKey="x" tick={AX} tickLine={false} axisLine={{ stroke: c.grid }} tickFormatter={fmt} />
           <YAxis dataKey="y" tick={AX} tickLine={false} axisLine={false} tickFormatter={fmt} width={44} />
           <Tooltip {...tip} />
-          <Scatter data={data} fill="#22D3EE" />
+          <Scatter data={data} fill={c.cyan} />
         </ScatterChart>
       </ResponsiveContainer>
     );
@@ -157,9 +149,9 @@ export default function AutoChart({ result }: { result: AnalysisResult }) {
       <table className="w-full text-left text-sm">
         <thead className="sticky top-0 bg-surface-2 text-ink-dim">
           <tr>
-            {result.columns.map((c) => (
-              <th key={c} className="px-3 py-2 font-medium">
-                {c}
+            {result.columns.map((col) => (
+              <th key={col} className="px-3 py-2 font-medium">
+                {col}
               </th>
             ))}
           </tr>
@@ -167,9 +159,9 @@ export default function AutoChart({ result }: { result: AnalysisResult }) {
         <tbody>
           {rows.slice(0, 50).map((r, i) => (
             <tr key={i} className="border-t border-line">
-              {result.columns.map((c) => (
-                <td key={c} className="px-3 py-1.5 font-mono text-[13px]">
-                  {String(r[c])}
+              {result.columns.map((col) => (
+                <td key={col} className="px-3 py-1.5 font-mono text-[13px]">
+                  {String(r[col])}
                 </td>
               ))}
             </tr>

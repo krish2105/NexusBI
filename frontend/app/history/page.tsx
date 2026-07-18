@@ -73,7 +73,7 @@ export default function HistoryPage() {
                   )}
                 </div>
                 {q.sql && (
-                  <code className="mt-2 block overflow-x-auto rounded bg-[#0E1117] px-2 py-1 font-mono text-[11px] text-ink-dim">
+                  <code className="code-panel mt-2 block overflow-x-auto rounded px-2 py-1 font-mono text-[11px]">
                     {q.sql.replace(/\s+/g, " ").slice(0, 140)}
                   </code>
                 )}

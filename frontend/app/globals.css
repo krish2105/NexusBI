@@ -7,16 +7,76 @@
   --font-mono: "JetBrains Mono", ui-monospace, monospace;
 }
 
-html {
-  background: #0b0d12;
+/* ---------------------------------------------------------------------------
+ * Design tokens. Every Tailwind color (bg-base, text-ink, border-line, …)
+ * resolves to these channels, so the whole app re-themes off one attribute:
+ * <html data-theme="light|dark">. Alpha utilities (bg-pos/10) keep working
+ * because the values are raw RGB channels.
+ * ------------------------------------------------------------------------- */
+:root,
+[data-theme="dark"] {
+  --base: 11 13 18; /* #0B0D12 */
+  --surface: 20 23 31; /* #14171F */
+  --surface-2: 27 31 42; /* #1B1F2A */
+  --line: 36 42 56; /* #242A38 */
+  --ink: 231 234 240; /* #E7EAF0 */
+  --ink-dim: 155 163 180; /* #9BA3B4 */
+  --ink-faint: 94 102 120; /* #5E6678 */
+  --indigo: 99 102 241; /* #6366F1 */
+  --cyan: 34 211 238; /* #22D3EE */
+  --pos: 52 211 153; /* #34D399 */
+  --neg: 248 113 113; /* #F87171 */
+  --amber: 251 191 36; /* #FBBF24 */
+
+  --glass-bg: rgba(20, 23, 31, 0.6);
+  --glass-line: rgba(255, 255, 255, 0.06);
+  --card-shadow: 0 1px 0 0 rgba(255, 255, 255, 0.03) inset,
+    0 12px 40px -16px rgba(0, 0, 0, 0.6);
+  --aurora-opacity: 0.5;
+  --grid-fade-opacity: 0.12;
   color-scheme: dark;
 }
+
+[data-theme="light"] {
+  --base: 246 247 251; /* #F6F7FB */
+  --surface: 255 255 255;
+  --surface-2: 238 241 248; /* #EEF1F8 */
+  --line: 224 228 238; /* #E0E4EE */
+  --ink: 21 26 38; /* #151A26 */
+  --ink-dim: 90 100 120; /* #5A6478 */
+  --ink-faint: 148 156 173; /* #949CAD */
+  --indigo: 79 70 229; /* #4F46E5 */
+  --cyan: 14 116 144; /* #0E7490 */
+  --pos: 5 150 105; /* #059669 */
+  --neg: 220 38 38; /* #DC2626 */
+  --amber: 180 83 9; /* #B45309 */
+
+  --glass-bg: rgba(255, 255, 255, 0.72);
+  --glass-line: rgba(21, 26, 38, 0.08);
+  --card-shadow: 0 1px 2px rgba(21, 26, 38, 0.04),
+    0 12px 32px -16px rgba(21, 26, 38, 0.14);
+  --aurora-opacity: 0.35;
+  --grid-fade-opacity: 0.08;
+  color-scheme: light;
+}
+
+html {
+  background: rgb(var(--base));
+}
 body {
-  background: #0b0d12;
-  color: #e7eaf0;
+  background: rgb(var(--base));
+  color: rgb(var(--ink));
   font-feature-settings: "cv11", "ss01";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Instant, coherent recolor on toggle — cheap properties only. */
+html.theme-switching body,
+html.theme-switching .card,
+html.theme-switching .glass {
+  transition: background-color 0.35s ease, border-color 0.35s ease,
+    color 0.35s ease;
 }
 
 /* Lenis smooth scroll */
@@ -29,29 +89,38 @@ html.lenis body {
 }
 
 ::selection {
-  background: rgba(99, 102, 241, 0.35);
+  background: rgb(var(--indigo) / 0.35);
 }
 
 /* Surgical glassmorphism — nav, query bar, insight cards only */
 .glass {
-  background: rgba(20, 23, 31, 0.6);
+  background: var(--glass-bg);
   backdrop-filter: blur(16px) saturate(140%);
   -webkit-backdrop-filter: blur(16px) saturate(140%);
-  border: 1px solid rgba(255, 255, 255, 0.06);
+  border: 1px solid var(--glass-line);
 }
 
 .gradient-text {
-  background: linear-gradient(135deg, #a5b4fc 0%, #67e8f9 100%);
+  background: linear-gradient(
+    135deg,
+    rgb(var(--indigo)) 0%,
+    rgb(var(--cyan)) 100%
+  );
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
 }
+[data-theme="dark"] .gradient-text {
+  background: linear-gradient(135deg, #a5b4fc 0%, #67e8f9 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
 
 .card {
-  background: #14171f;
-  border: 1px solid #242a38;
+  background: rgb(var(--surface));
+  border: 1px solid rgb(var(--line));
   border-radius: 16px;
-  box-shadow: 0 12px 40px -16px rgba(0, 0, 0, 0.6);
+  box-shadow: var(--card-shadow);
 }
 
 .gradient-border {
@@ -63,7 +132,11 @@ html.lenis body {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(99, 102, 241, 0.6), rgba(34, 211, 238, 0.4));
+  background: linear-gradient(
+    135deg,
+    rgb(var(--indigo) / 0.6),
+    rgb(var(--cyan) / 0.4)
+  );
   -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -75,22 +148,131 @@ html.lenis body {
   opacity: 1;
 }
 
+/* Terminal-style code panels — deliberately dark in BOTH themes so SQL
+ * syntax colors never fight the page background. */
+.code-panel {
+  background: #0e1117;
+  border: 1px solid #242a38;
+  color: #9ba3b4;
+}
+[data-theme="light"] .code-panel {
+  border-color: #1f2734;
+  box-shadow: 0 8px 24px -12px rgba(21, 26, 38, 0.35);
+}
+
+/* Cursor spotlight for feature cards: JS feeds --mx/--my in px. */
+.spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(
+    240px circle at var(--mx, 50%) var(--my, 50%),
+    rgb(var(--indigo) / 0.1),
+    transparent 65%
+  );
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.spotlight:hover::after {
+  opacity: 1;
+}
+
+/* Aurora backdrop for the landing hero — pure transform/opacity animation. */
+.aurora {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(90px);
+  opacity: var(--aurora-opacity);
+  will-change: transform;
+  pointer-events: none;
+}
+.aurora-a {
+  background: radial-gradient(
+    circle,
+    rgb(var(--indigo) / 0.55),
+    transparent 65%
+  );
+  animation: aurora-a 16s ease-in-out infinite alternate;
+}
+.aurora-b {
+  background: radial-gradient(circle, rgb(var(--cyan) / 0.4), transparent 65%);
+  animation: aurora-b 21s ease-in-out infinite alternate;
+}
+@keyframes aurora-a {
+  from {
+    transform: translate3d(-8%, -4%, 0) scale(1);
+  }
+  to {
+    transform: translate3d(10%, 8%, 0) scale(1.15);
+  }
+}
+@keyframes aurora-b {
+  from {
+    transform: translate3d(6%, 6%, 0) scale(1.1);
+  }
+  to {
+    transform: translate3d(-10%, -6%, 0) scale(0.95);
+  }
+}
+
+/* Infinite marquee (transform-only). Duplicate the track for the seam. */
+.marquee {
+  display: flex;
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+  mask-image: linear-gradient(
+    to right,
+    transparent,
+    #000 12%,
+    #000 88%,
+    transparent
+  );
+}
+.marquee-track {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  gap: 2.5rem;
+  padding-right: 2.5rem;
+  animation: marquee 32s linear infinite;
+}
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+@keyframes marquee {
+  to {
+    transform: translateX(-100%);
+  }
+}
+
 /* Custom scrollbar */
 *::-webkit-scrollbar {
   width: 10px;
   height: 10px;
 }
 *::-webkit-scrollbar-thumb {
-  background: #242a38;
+  background: rgb(var(--line));
   border-radius: 8px;
-  border: 2px solid #0b0d12;
+  border: 2px solid rgb(var(--base));
 }
 *::-webkit-scrollbar-thumb:hover {
-  background: #2f3648;
+  background: rgb(var(--ink-faint));
 }
 
 .focus-ring:focus-visible {
-  outline: 2px solid #6366f1;
+  outline: 2px solid rgb(var(--indigo));
   outline-offset: 2px;
 }
 

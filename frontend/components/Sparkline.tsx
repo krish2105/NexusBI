@@ -1,17 +1,29 @@
 "use client";
+import { useChartTheme } from "@/lib/chartTheme";
+
+export type SparkTone = "accent" | "good" | "bad" | "neutral";
 
 export default function Sparkline({
   values,
-  color = "#22D3EE",
+  tone = "accent",
   width = 96,
   height = 28,
 }: {
   values: number[];
-  color?: string;
+  tone?: SparkTone;
   width?: number;
   height?: number;
 }) {
+  const c = useChartTheme();
   if (!values || values.length < 2) return null;
+  const color =
+    tone === "good"
+      ? c.pos
+      : tone === "bad"
+        ? c.neg
+        : tone === "neutral"
+          ? c.neutral
+          : c.cyan;
   const min = Math.min(...values);
   const max = Math.max(...values);
   const span = max - min || 1;

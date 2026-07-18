@@ -14,20 +14,12 @@ import {
 import { getSegments } from "@/lib/api";
 import { useResource } from "@/lib/useResource";
 import { ErrorState, PageLoading } from "@/components/States";
-
-const COLORS: Record<string, string> = {
-  Champions: "#34D399",
-  Loyal: "#22D3EE",
-  "Potential Loyalist": "#818CF8",
-  "New / Promising": "#A78BFA",
-  "At Risk": "#FBBF24",
-  "Can't Lose": "#FB923C",
-  Hibernating: "#94A3B8",
-  Lost: "#F87171",
-};
+import { tooltipProps, useChartTheme } from "@/lib/chartTheme";
 
 export default function Segments() {
   const { data, loading, error, reload } = useResource<any>(() => getSegments());
+  const chart = useChartTheme();
+  const COLORS = chart.segments;
 
   if (loading) return <PageLoading />;
   if (error || !data)
@@ -68,8 +60,8 @@ export default function Segments() {
                   <span
                     className="rounded-full px-2 py-0.5 text-xs font-medium"
                     style={{
-                      background: (COLORS[s.segment] || "#6366F1") + "22",
-                      color: COLORS[s.segment] || "#6366F1",
+                      background: (COLORS[s.segment] || chart.indigo) + "22",
+                      color: COLORS[s.segment] || chart.indigo,
                     }}
                   >
                     {s.segment}
@@ -94,35 +86,30 @@ export default function Segments() {
             </p>
             <ResponsiveContainer width="100%" height={340}>
               <ScatterChart margin={{ top: 8, right: 12, left: 4, bottom: 4 }}>
-                <CartesianGrid stroke="#1B1F2A" />
+                <CartesianGrid stroke={chart.grid} />
                 <XAxis
                   type="number"
                   dataKey="f"
                   name="frequency"
-                  tick={{ stroke: "#5E6678", fontSize: 11 }}
+                  tick={{ fill: chart.axis, fontSize: 11 }}
                   tickLine={false}
-                  axisLine={{ stroke: "#1B1F2A" }}
+                  axisLine={{ stroke: chart.grid }}
                 />
                 <YAxis
                   type="number"
                   dataKey="m"
                   name="monetary"
-                  tick={{ stroke: "#5E6678", fontSize: 11 }}
+                  tick={{ fill: chart.axis, fontSize: 11 }}
                   tickLine={false}
                   axisLine={false}
                 />
                 <Tooltip
-                  contentStyle={{
-                    background: "#14171F",
-                    border: "1px solid #242A38",
-                    borderRadius: 10,
-                    fontSize: 12,
-                  }}
-                  cursor={{ strokeDasharray: "3 3" }}
+                  {...tooltipProps(chart)}
+                  cursor={{ strokeDasharray: "3 3", stroke: chart.axis }}
                 />
                 <Scatter data={data.scatter} fillOpacity={0.7}>
                   {data.scatter.map((p: any, i: number) => (
-                    <Cell key={i} fill={COLORS[p.segment] || "#6366F1"} />
+                    <Cell key={i} fill={COLORS[p.segment] || chart.indigo} />
                   ))}
                 </Scatter>
               </ScatterChart>

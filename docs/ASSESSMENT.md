@@ -5,44 +5,65 @@ live repository — web-grounded on the competitive landscape and current free-t
 limits — then a board synthesis and an outside-operator skeptic calibrated the result.
 This is the calibrated output. It is deliberately honest: neither inflated nor trashed.*
 
+> **Rescored 2026-07-18** after the P0 remediation wave. Every claim below was
+> **re-verified empirically** (full test suite, live eval rerun, dependency pins,
+> PyPI status, in-browser checks against the deployed stack) rather than trusted
+> from the previous edit's checkmarks. Methodology caveat: the original was a
+> 6-persona panel; the rescore is a single rigorous audit holding the same
+> weights and the same refusal to credit unverified work.
+> **Live:** [app](https://nexus-bi-iota.vercel.app) · [api](https://nexus-bi-backend.onrender.com/health)
+
 ---
 
 ## Final calibrated scorecard
 
-| Lens | Board | **Calibrated** | Why the discount |
-|---|---|---|---|
-| **As a real MVP** | 70 | **55** | Ephemeral state (loses everything on redeploy) + the safety core is largely **untested on the non-SQLite databases it exists to protect**. |
-| **As a free-tier SaaS a stranger would pay for** | 34 | **25** | Literal test ≈ near-zero: no billing, no tenancy, no durable store, no login, non-commercial hosting tiers. |
-| **Engineering craft / portfolio** | 88 | **78** | Brilliant core, but IDOR on `GET /query/{id}` + `/stream`, unauthenticated monitors, plaintext PII at rest, **unpinned `sqlglot`** (the safety layer floats on a live dependency), and sqlite-only lock-in are real judgment misses. |
-| **⭐ OVERALL** | 61 | **≈ 48** | Same weighting (MVP 35% · SaaS 30% · Craft 25% · Product/Market 10%). The board's 61 was inflated ~10–13 pts by craft/MVP absorbing the ephemerality and untested-safety-path problems without penalty. |
+| Lens | Original | **Now** | What moved it |
+|---|---:|---:|---|
+| **As a real MVP** | 55 | **74** | Both stated reasons for the discount are gone: state is durable **and deployed** (a dashboard survived redeploy, verified in-browser), and the guard now has a 26-case × 4-dialect golden regression suite, closing the "SQLite-only tested" gap. |
+| **As a free-tier SaaS a stranger would pay for** | 25 | **33** | Durable store closes one of four gaps. Still fails the literal test — no billing, no way to create an account, and Render/Vercel free tiers are non-commercial. |
+| **Engineering craft / portfolio** | 78 | **90** | 4 of 5 cited judgment-misses closed and verified: IDOR fixed, monitors token-gated, **`sqlglot==30.12.0` pinned**, SQLite-only lock-in gone. Plus a shipped design system with first-class light/dark. |
+| **⭐ OVERALL** | ≈48 | **≈ 63** | Same weights (MVP 35% · SaaS 30% · Craft 25% · Product/Market 10%). |
+
+*Overall math: 74·.35 + 33·.30 + 90·.25 + 50·.10 = **63.3**.*
 
 ### Domain sub-scores
 
-| Domain | Score | Basis |
-|---|---:|---|
-| Security | **80** | Legitimately senior threat model (5-layer guard, SSRF screen, read-only verify, Fernet DSNs, audit log); dinged by IDOR + unauth monitors, TOCTOU SSRF, unpinned sqlglot. |
-| Architecture | **74** | Clean layered design, deterministic agent graph, elegant multi-dialect abstraction; capped by SQLite-only app store and single-instance state. |
-| Backend | **70** | Production-grade safety core, cleanly typed; undercut by ephemeral persistence, unthrottled SSE re-exec, O(n) PBKDF2 auth, no real pooling. |
-| Frontend / UX | **63** | Tasteful design system, excellent SSE streaming + agent-pipeline viz; broken mobile nav, no auth/account shell, silent error swallowing, no error boundaries. |
-| ML / Data-science | **62** | Honest evals (rolling-origin backtest, band coverage, Spider/BIRD harness); ~49% exec-acc on hard joins and an Olist-hardcoded join graph limit BYO-schema accuracy. |
-| Product / Market | **45** | Sharp, clearly-articulated safety wedge; but narrow/copyable moat, no semantic layer, unvalidated ICP, consolidating market. (Board 58 → skeptic 45.) |
-| Finance / Unit-economics | **50** | Deterministic default = $0 LLM COGS is a real win; but zero monetization surface and uncapped ML/CPU + BYO-CSV storage COGS. |
-| Ops / Compliance | **42** | Strong runbook and CI gate; but non-durable audit log, no ToS/Privacy/DPA, plaintext PII at rest, no monitoring/incident response. |
+| Domain | Was | **Now** | Basis (re-verified) |
+|---|---:|---:|---|
+| Security | 80 | **87** | IDOR class closed, SSE replays instead of re-executing, monitors token-gated, sqlglot pinned. Still open: TOCTOU SSRF, plaintext PII in `queries.payload`. |
+| Architecture | 74 | **80** | SQLite-only cap removed (dual-backend AppStore); join graph is FK-introspected, not Olist-hardcoded. Still capped: in-memory rate limiter/state, no horizontal scale. |
+| Backend | 70 | **80** | Ephemeral persistence and SSE cost-amplification both fixed. Still open: O(n) PBKDF2 auth, no target-DB pooling. |
+| Frontend / UX | 63 | **84** | Mobile nav, error boundaries, retry states — all verified live. Now a token-driven design system with a **real light theme** (designed, not inverted), themed interactive charts, motion gated on `prefers-reduced-motion`, and cold-start states that explain themselves. Still open: no login/account shell, no a11y audit. |
+| ML / Data-science | 62 | **66** | Olist-hardcoded join graph genuinely gone; Spider/BIRD now deterministic (**9/14 = 64% EX**, was a nondeterministic 7–9/14 spread). **But hard-query accuracy did not move** — reran the eval: still **49% overall, 8% on hard**. |
+| Product / Market | 45 | **50** | Semantic/metrics layer shipped and live (9 certified definitions, safety-verified on write) — closes 1 of 4 cited gaps. Moat, ICP validation, market consolidation unchanged. |
+| Finance / Unit-economics | 50 | **50** | No monetization work. Unchanged. |
+| Ops / Compliance | 42 | **47** | Audit log is now durable (Postgres) as a side effect of the app-store migration. ToS/Privacy/DPA still absent; PII still plaintext at rest. |
 
-*Overall math (same weights, Product/Market marked 58→45):
-55·.35 + 25·.30 + 78·.25 + 45·.10 = **≈ 48–51**.*
+### What was explicitly *not* credited
+
+Discipline matters more than the number. These were checked and refused:
+
+- **Hard-join accuracy** — reran `evals.run_evals` live: **49% / 8% hard**, unchanged. The join-graph fix improved BYO-schema *portability*, not the accuracy ceiling. Do not conflate the two.
+- **`sqlguard` on PyPI** — `pypi.org/pypi/sqlguard/json` returns **404**. Release infra is built (token-free Trusted Publishing) but nothing is published.
+- **Billing, ToS/Privacy/DPA, PII encryption, login shell** — confirmed still absent.
+
+**Test suite:** 189 tests — 183 passed, 6 skipped, 0 failed (was 158).
 
 ---
 
 ## The one thing everyone over-rates
 
-**The "5-layer safety guard."** It is the crown jewel *and* the entire go-to-market thesis —
-but it is (a) mostly tested against **SQLite**, not the Postgres/MySQL/BigQuery targets it is
-meant to protect; (b) built on an **unpinned `sqlglot`**, so a transitive parser bump can
-silently change what SQL it accepts or rejects; and (c) a **copyable moat** — a read replica
-plus a read-only `GRANT` gives a DBA ~90% of the same guarantee for free. People read
-"5-layer" and hear "enterprise-safe." What it actually is: a well-designed guard, tested on
-the wrong database, on a floating dependency, defending a moat two lines of SQL can dig.
+**The "5-layer safety guard."** It is the crown jewel *and* the entire go-to-market thesis.
+Two of the three original criticisms are now fixed: ~~mostly tested against SQLite~~ (a
+26-case × 4-dialect golden regression suite freezes verdicts across dialects) and
+~~unpinned `sqlglot`~~ (`sqlglot==30.12.0`, pin documented as load-bearing).
+
+**The third criticism stands, and it is the important one:** it is a **copyable moat** — a
+read replica plus a read-only `GRANT` gives a DBA ~90% of the same guarantee for free.
+People read "5-layer" and hear "enterprise-safe." What it actually is now: a genuinely
+well-built, well-tested, dependency-pinned guard — defending a moat two lines of SQL can
+dig. Engineering fixed what engineering could. The remaining problem is a *market*
+problem, and no amount of further hardening solves it.
 
 ---
 
@@ -92,11 +113,17 @@ the wrong database, on a floating dependency, defending a moat two lines of SQL 
    gated by a service token (`MONITOR_RUN_TOKEN`) and hardened to isolate per-monitor failures.
    Verified by a multi-tenant test suite (tenant B blocked from A's resources; 158 tests pass).
 4. **No legal / compliance surface.** No ToS/Privacy/DPA; query payloads cache PII as plaintext
-   JSON at rest; audit log non-durable — a hard B2B blocker.
-5. **Stranger-facing credibility gaps** — *partially fixed.* ✅ Mobile nav (hamburger + drawer, all
-   routes reachable), ✅ route-level `error.tsx`/`loading.tsx`/`not-found.tsx`, ✅ skeletons + visible
-   error/retry states replacing silent `.catch` (verified in-browser). Still open: no login/account
-   shell; ~49% accuracy on hard joins; no design partners.
+   JSON at rest — a hard B2B blocker. *(Audit-log durability: ✅ fixed — now Postgres-backed.)*
+5. ~~**Stranger-facing credibility gaps.**~~ ✅ **Largely fixed.** Mobile nav, route-level
+   `error.tsx`/`loading.tsx`/`not-found.tsx`, skeletons + visible error/retry, a token-driven
+   design system with a real light theme, themed interactive charts, and cold-start states that
+   explain the free-tier wake-up instead of looking frozen — all verified in-browser on the live
+   deployment. Still open: no login/account shell; **~49% accuracy on hard joins (unchanged)**;
+   no design partners.
+
+> **The top-5 list is now front-loaded with problems engineering cannot solve.** #1, #3 and #5
+> are done; #2 and #4 are business/legal decisions, not code. That is the real story of this
+> rescore: the build quality is no longer the bottleneck.
 
 **The 5 highest-leverage moves**
 
@@ -113,8 +140,11 @@ the wrong database, on a floating dependency, defending a moat two lines of SQL 
 
 ## Master implementation plan
 
-### P0 — Make it real & live (~3–5 focused solo weeks; board said 2)
-Durable, live, safe-to-connect single-tenant product.
+### P0 — Make it real & live ✅ **COMPLETE (2026-07-18)**
+Durable, live, safe-to-connect single-tenant product. **All four tracks shipped and
+verified against the live deployment.** Backend on Render + Neon Postgres, frontend on
+Vercel, every route pulling real data. Remaining work starts at P1 — see
+[`ROADMAP.md`](./ROADMAP.md) for the phased plan.
 
 | Track | Workstreams |
 |---|---|
@@ -173,18 +203,19 @@ Durable advantage beyond a copyable safety wedge.
 ## What this actually is, and the two rational moves
 
 A **top-of-portfolio solo engineering sample** — a genuinely clever, honestly-evaluated
-read-only text-to-SQL engine with a well-designed safety guard — that is **not yet a product**:
-it loses all state on redeploy, has no way to charge, no tenancy, no login, a ~50%-on-hard-joins
-accuracy ceiling on the buyers' key axis, and a central "trust my guard on your prod DB" thesis
-that is unproven and mostly SQLite-tested. Read it as an **~78-quality hiring artifact wearing a
-business costume**.
+read-only text-to-SQL engine with a well-built, well-tested, dependency-pinned safety guard —
+that is now **live, durable and demonstrable**, but still **not a business**: no way to charge,
+no tenancy, no login, a ~49%-on-hard-joins accuracy ceiling on the buyers' key axis, and a
+central "trust my guard on your prod DB" thesis that remains **unvalidated with real buyers**.
+Read it as a **~90-quality hiring artifact** that has earned the right to be shown to people —
+and a business that still hasn't earned the right to exist.
 
 There are two rational moves:
 
-- **Move A — Freeze near a polished P0 and use it to get hired.** The craft score already clears
-  the bar. ✅ Durable Postgres app-store, ✅ mobile nav + error states, ✅ the IDOR/SSE holes closed,
-  ✅ deps pinned (+ Docker/CI version drift fixed). Remaining: deploy live (needs your cloud
-  accounts) + write the case study. Highest ROI, genuinely ~$0.
+- **Move A — Freeze near a polished P0 and use it to get hired.** ✅ **Essentially done.**
+  Durable Postgres app-store, mobile nav + error states, IDOR/SSE holes closed, deps pinned,
+  premium themed frontend, **and it is live**. Remaining: write the case study, publish
+  `sqlguard` to PyPI, record a demo. Highest ROI, genuinely ~$0.
 - **Move B — Validate the safety-as-buying-criterion bet before building the SaaS stack.**
   ✅ The OSS-guard move is done — [`sqlguard`](https://github.com/krish2105/sqlguard) is live, its
   own repo + CI, MIT licensed. Not yet done: take the demo to 5 named mid-market Postgres teams;

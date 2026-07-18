@@ -84,9 +84,13 @@ the wrong database, on a floating dependency, defending a moat two lines of SQL 
    updated. *(Original finding: asserted `sqlite:///` only; Render mounts no disk.)*
 2. **No monetization or metering surface at all.** Cannot charge today; true COGS (ML CPU +
    BYO-CSV storage) is uncapped.
-3. **Broken access control / multi-tenancy.** Monitors unauthenticated + unscoped;
-   `GET /query/{id}` and `/stream` skip `authorize_connection` (IDOR); the SSE stream re-runs
-   the full pipeline unthrottled (DoS + cost amplification).
+3. ~~**Broken access control / multi-tenancy.**~~ ✅ **FIXED.** Closed the whole GET-by-id IDOR
+   class — `query`, `conversations`, `dashboards`, and `monitors`/`alerts` now enforce
+   `authorize_connection`/`authorize_owner` (per-connection tenant isolation; the demo stays
+   public). The SSE stream is rate-limited and **replays a completed query from its stored result
+   instead of re-running the pipeline** (kills the DoS/cost-amplification vector); `run-all` is
+   gated by a service token (`MONITOR_RUN_TOKEN`) and hardened to isolate per-monitor failures.
+   Verified by a multi-tenant test suite (tenant B blocked from A's resources; 158 tests pass).
 4. **No legal / compliance surface.** No ToS/Privacy/DPA; query payloads cache PII as plaintext
    JSON at rest; audit log non-durable — a hard B2B blocker.
 5. **Stranger-facing credibility gaps.** Mobile nav completely broken (6 of 8 routes unreachable

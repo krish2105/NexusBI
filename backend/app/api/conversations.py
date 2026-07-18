@@ -8,7 +8,8 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Depends, HTTPException
 
-from app.api.deps import authorize_connection, get_current_user
+from app.api.deps import (authorize_connection, can_access_connection,
+                          get_current_user)
 from app.api.schemas import ConversationRequest
 from app.db.app_store import get_store
 
@@ -23,15 +24,20 @@ def create_conversation(req: ConversationRequest,
 
 
 @router.get("/conversations")
-def list_conversations(connection_id: str | None = None, limit: int = 50):
-    return {"conversations": get_store().list_conversations(connection_id, limit)}
+def list_conversations(connection_id: str | None = None, limit: int = 50,
+                       user: dict | None = Depends(get_current_user)):
+    rows = get_store().list_conversations(connection_id, limit)
+    rows = [c for c in rows if can_access_connection(c.get("connection_id"), user)]
+    return {"conversations": rows}
 
 
 @router.get("/conversations/{conversation_id}")
-def get_conversation(conversation_id: str):
+def get_conversation(conversation_id: str,
+                     user: dict | None = Depends(get_current_user)):
     conv = get_store().get_conversation(conversation_id)
     if not conv:
         raise HTTPException(404, "unknown conversation")
+    authorize_connection(conv["connection_id"], user)  # thread payloads may hold PII
     # Expose each turn's final result payload for thread replay.
     turns = [{"query_id": t["id"], "question": t["question"],
               "turn_index": t.get("turn_index"),

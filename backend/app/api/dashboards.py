@@ -6,21 +6,24 @@ from fastapi import APIRouter, Depends, HTTPException
 from app.agents.dashboard_planner import plan_dashboard
 from app.agents.graph import run_analysis_collect
 from app.agents.planner import plan_question
-from app.api.deps import (authorize_connection, get_current_user,
-                          resolve_connection_url)
+from app.api.deps import (authorize_connection, authorize_owner,
+                          get_current_user, rate_limit, resolve_connection_url)
 from app.api.schemas import (DashboardGenerateRequest, DashboardRequest,
                              PinRequest)
+from app.config import settings
 from app.db.app_store import get_store
 
 router = APIRouter(prefix="/dashboards", tags=["dashboards"])
 
 
 @router.post("")
-def create_dashboard(req: DashboardRequest):
-    return get_store().create_dashboard(req.name)
+def create_dashboard(req: DashboardRequest,
+                     user: dict | None = Depends(get_current_user)):
+    return get_store().create_dashboard(req.name,
+                                        user_id=user["id"] if user else None)
 
 
-@router.post("/generate")
+@router.post("/generate", dependencies=[Depends(rate_limit)])
 def generate_dashboard(req: DashboardGenerateRequest,
                        user: dict | None = Depends(get_current_user)):
     """NL → dashboard: interpret the description into a themed set of questions,
@@ -30,7 +33,8 @@ def generate_dashboard(req: DashboardGenerateRequest,
     url = resolve_connection_url(req.connection_id)
     plan = plan_dashboard(req.description, url)
 
-    dash = store.create_dashboard(plan.title)
+    dash = store.create_dashboard(plan.title,
+                                  user_id=user["id"] if user else None)
     tiles = []
     for i, q in enumerate(plan.questions):
         seed = None
@@ -52,24 +56,37 @@ def generate_dashboard(req: DashboardGenerateRequest,
 
 
 @router.get("")
-def list_dashboards():
-    return {"dashboards": get_store().list_dashboards()}
+def list_dashboards(user: dict | None = Depends(get_current_user)):
+    ds = get_store().list_dashboards()
+    if settings.require_auth:
+        ds = [d for d in ds if d.get("user_id") in (None, "")
+              or (user and d["user_id"] == user["id"])]
+    return {"dashboards": ds}
 
 
 @router.post("/{dashboard_id}/pin")
-def pin(dashboard_id: str, req: PinRequest):
-    store = get_store()
-    if not store.get_query(req.query_id):
-        raise HTTPException(404, "unknown query_id")
-    return store.pin_to_dashboard(dashboard_id, req.query_id, req.position)
-
-
-@router.get("/{dashboard_id}")
-def load_dashboard(dashboard_id: str, live: bool = True):
+def pin(dashboard_id: str, req: PinRequest,
+        user: dict | None = Depends(get_current_user)):
     store = get_store()
     dash = store.get_dashboard(dashboard_id)
     if not dash:
         raise HTTPException(404, "unknown dashboard")
+    authorize_owner(dash.get("user_id"), user)
+    q = store.get_query(req.query_id)
+    if not q:
+        raise HTTPException(404, "unknown query_id")
+    authorize_connection(q["connection_id"], user)  # can't pin another tenant's query
+    return store.pin_to_dashboard(dashboard_id, req.query_id, req.position)
+
+
+@router.get("/{dashboard_id}", dependencies=[Depends(rate_limit)])
+def load_dashboard(dashboard_id: str, live: bool = True,
+                   user: dict | None = Depends(get_current_user)):
+    store = get_store()
+    dash = store.get_dashboard(dashboard_id)
+    if not dash:
+        raise HTTPException(404, "unknown dashboard")
+    authorize_owner(dash.get("user_id"), user)
     # Re-run each pinned query against live data (dashboards reflect current data).
     for item in dash["items"]:
         q = store.get_query(item["query_id"])

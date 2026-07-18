@@ -45,6 +45,11 @@ class Settings(BaseSettings):
     # Per-client rate limit on /query (requests per window seconds).
     rate_limit_requests: int = 30
     rate_limit_window_s: int = 60
+    # Shared secret gating POST /monitors/run-all (the scheduler entrypoint). When
+    # set, callers must present it as the X-Monitor-Token header. Required to run
+    # monitors on a multi-tenant deployment (REQUIRE_AUTH=true); the open demo
+    # leaves it unset so a cron can trigger runs without a token.
+    monitor_run_token: str | None = None
 
     # --- App metadata DB (connections, history, dashboards, audit) ---
     # Default: local SQLite file. Production: set to a Supabase Postgres URL.

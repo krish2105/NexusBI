@@ -74,10 +74,22 @@ def run_monitor(monitor: dict) -> dict:
 def run_all_monitors() -> dict:
     store = get_store()
     monitors = store.list_monitors(enabled_only=True)
-    runs, total_alerts = [], 0
+    runs, total_alerts, errors = [], 0, 0
     for m in monitors:
-        r = run_monitor(m)
-        total_alerts += len(r["alerts"])
-        runs.append({"monitor_id": m["id"], "name": m["name"],
-                     "status": r["status"], "alerts": len(r["alerts"])})
-    return {"monitors_run": len(monitors), "alerts_raised": total_alerts, "runs": runs}
+        # Isolate each monitor: a scheduled batch must not fail wholesale because
+        # one monitor has a bad connection or an unanswerable question.
+        try:
+            r = run_monitor(m)
+            total_alerts += len(r["alerts"])
+            runs.append({"monitor_id": m["id"], "name": m["name"],
+                         "status": r["status"], "alerts": len(r["alerts"])})
+        except Exception as e:  # noqa: BLE001
+            errors += 1
+            try:
+                store.mark_monitor_run(m["id"], "error")
+            except Exception:  # noqa: BLE001
+                pass
+            runs.append({"monitor_id": m["id"], "name": m["name"],
+                         "status": "error", "alerts": 0, "error": str(e)[:200]})
+    return {"monitors_run": len(monitors), "alerts_raised": total_alerts,
+            "errors": errors, "runs": runs}

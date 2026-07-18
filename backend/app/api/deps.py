@@ -69,3 +69,23 @@ def authorize_connection(connection_id: str, user: dict | None) -> None:
     if settings.require_auth:
         if not user or conn.get("user_id") != user["id"]:
             raise HTTPException(403, "this connection belongs to another account")
+
+
+def can_access_connection(connection_id: str | None, user: dict | None) -> bool:
+    """Non-raising form of :func:`authorize_connection`, for filtering list
+    responses down to the resources a caller is allowed to see."""
+    if not settings.require_auth:
+        return True
+    if connection_id in (DEMO_CONNECTION_ID, "", None):
+        return True
+    conn = get_store().get_connection(connection_id)
+    return bool(conn and user and conn.get("user_id") == user["id"])
+
+
+def authorize_owner(owner_id: str | None, user: dict | None) -> None:
+    """Ownership check for resources keyed on a ``user_id`` (e.g. dashboards).
+    Resources created in the open demo (no owner) stay public."""
+    if not settings.require_auth or owner_id in (None, ""):
+        return
+    if not user or owner_id != user["id"]:
+        raise HTTPException(403, "this resource belongs to another account")

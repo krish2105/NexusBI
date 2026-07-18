@@ -47,6 +47,19 @@ class Settings(BaseSettings):
         if isinstance(v, str):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
+
+    @field_validator(
+        "app_db_url", "demo_target_url", "jwt_secret", "encryption_key",
+        "monitor_run_token", "groq_api_key", "ollama_base_url",
+        "langfuse_public_key", "langfuse_secret_key", "langfuse_host",
+        mode="before",
+    )
+    @classmethod
+    def _strip_whitespace(cls, v: object) -> object:
+        # Hosting UIs (Render, etc.) make it easy to paste a trailing newline
+        # into an env var field, which silently corrupts DSNs/keys (e.g.
+        # psycopg2 rejecting "sslmode=require\n" as an invalid value).
+        return v.strip() if isinstance(v, str) else v
     # Allow connections to loopback/private hosts (dev only). Off = SSRF-safe.
     allow_local_targets: bool = False
     # Require a valid API key / JWT to create connections & run custom queries.

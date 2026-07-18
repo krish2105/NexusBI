@@ -1,0 +1,176 @@
+{
+  "suite": "spider_bird",
+  "source": "bundled fixture (evals/spider/fixture.py)",
+  "dataset_format": "spider",
+  "generator_mode": "deterministic",
+  "total": 14,
+  "correct": 6,
+  "execution_accuracy": 0.4286,
+  "blocked": 0,
+  "skipped": 0,
+  "gold_errors": 0,
+  "accuracy_by_difficulty": {
+    "easy": 0.6667,
+    "hard": 0.0,
+    "medium": 0.5
+  },
+  "elapsed_s": 0.02,
+  "metric": "Execution accuracy (EX): predicted result set equals the gold query's result set \u2014 order-agnostic unless the gold has a top-level ORDER BY; column order ignored; extra predicted columns tolerated.",
+  "note": "Full pipeline (safety gate included) per example, generator_mode=deterministic. Each question runs against its own database via connection_url.",
+  "details": [
+    {
+      "db_id": "music_festival",
+      "question": "How many singers are there?",
+      "difficulty": "easy",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   COUNT(*) AS row_count FROM \"concert\" LIMIT 10000",
+      "gold_sql": "SELECT COUNT(*) FROM singer",
+      "gold_rows": 1,
+      "pred_rows": 1
+    },
+    {
+      "db_id": "music_festival",
+      "question": "What is the average age of the singers?",
+      "difficulty": "easy",
+      "status": "correct",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   ROUND(AVG(\"age\"), 2) AS avg_age FROM \"singer\" LIMIT 10000",
+      "gold_sql": "SELECT AVG(age) FROM singer",
+      "gold_rows": 1,
+      "pred_rows": 1
+    },
+    {
+      "db_id": "music_festival",
+      "question": "How many singers are there from each country?",
+      "difficulty": "easy",
+      "status": "correct",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"country\" AS country,   COUNT(*) AS row_count FROM \"singer\" GROUP BY   \"country\" ORDER BY   row_count DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT country, COUNT(*) FROM singer GROUP BY country",
+      "gold_rows": 3,
+      "pred_rows": 3
+    },
+    {
+      "db_id": "music_festival",
+      "question": "What is the total capacity of all stadiums?",
+      "difficulty": "easy",
+      "status": "correct",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   SUM(\"capacity\") AS sum_capacity FROM \"stadium\" LIMIT 10000",
+      "gold_sql": "SELECT SUM(capacity) FROM stadium",
+      "gold_rows": 1,
+      "pred_rows": 1
+    },
+    {
+      "db_id": "music_festival",
+      "question": "What is the maximum ticket price among all concerts?",
+      "difficulty": "medium",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"concert_name\" AS concert_name,   SUM(\"ticket_price\") AS sum_ticket_price FROM \"concert\" GROUP BY   \"concert_name\" ORDER BY   sum_ticket_price DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT MAX(ticket_price) FROM concert",
+      "gold_rows": 1,
+      "pred_rows": 6
+    },
+    {
+      "db_id": "music_festival",
+      "question": "How many stadiums are in each city?",
+      "difficulty": "medium",
+      "status": "correct",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"city\" AS city,   COUNT(*) AS row_count FROM \"stadium\" GROUP BY   \"city\" ORDER BY   row_count DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT city, COUNT(*) FROM stadium GROUP BY city",
+      "gold_rows": 3,
+      "pred_rows": 3
+    },
+    {
+      "db_id": "music_festival",
+      "question": "What are the names of stadiums that have hosted more than one concert?",
+      "difficulty": "hard",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"concert_name\" AS concert_name,   SUM(\"ticket_price\") AS sum_ticket_price FROM \"concert\" GROUP BY   \"concert_name\" ORDER BY   sum_ticket_price DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT T2.name FROM concert AS T1 JOIN stadium AS T2 ON T1.stadium_id = T2.stadium_id GROUP BY T1.stadium_id HAVING COUNT(*) > 1",
+      "gold_rows": 3,
+      "pred_rows": 6
+    },
+    {
+      "db_id": "music_festival",
+      "question": "For each singer, how many concerts have they performed in?",
+      "difficulty": "hard",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"name\" AS name,   COUNT(*) AS row_count FROM \"singer\" GROUP BY   \"name\" ORDER BY   row_count DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT T2.name, COUNT(*) FROM singer_in_concert AS T1 JOIN singer AS T2 ON T1.singer_id = T2.singer_id GROUP BY T1.singer_id",
+      "gold_rows": 5,
+      "pred_rows": 5
+    },
+    {
+      "db_id": "store_sales",
+      "question": "How many customers are there?",
+      "difficulty": "easy",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   COUNT(*) AS row_count FROM \"sales_order\" LIMIT 10000",
+      "gold_sql": "SELECT COUNT(*) FROM customer",
+      "gold_rows": 1,
+      "pred_rows": 1
+    },
+    {
+      "db_id": "store_sales",
+      "question": "What is the total amount across all orders?",
+      "difficulty": "easy",
+      "status": "correct",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   SUM(\"amount\") AS sum_amount FROM \"sales_order\" LIMIT 10000",
+      "gold_sql": "SELECT SUM(amount) FROM sales_order",
+      "gold_rows": 1,
+      "pred_rows": 1
+    },
+    {
+      "db_id": "store_sales",
+      "question": "How many customers are in each segment?",
+      "difficulty": "medium",
+      "status": "correct",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"segment\" AS segment,   COUNT(*) AS row_count FROM \"customer\" GROUP BY   \"segment\" ORDER BY   row_count DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT segment, COUNT(*) FROM customer GROUP BY segment",
+      "gold_rows": 2,
+      "pred_rows": 2
+    },
+    {
+      "db_id": "store_sales",
+      "question": "What is the average unit price for each product category?",
+      "difficulty": "medium",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"product_name\" AS product_name,   ROUND(AVG(\"unit_price\"), 2) AS avg_unit_price FROM \"product\" GROUP BY   \"product_name\" ORDER BY   avg_unit_price DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT category, AVG(unit_price) FROM product GROUP BY category",
+      "gold_rows": 3,
+      "pred_rows": 4
+    },
+    {
+      "db_id": "store_sales",
+      "question": "What is the total order amount for each customer city?",
+      "difficulty": "hard",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   SUM(\"amount\") AS sum_amount FROM \"sales_order\" LIMIT 10000",
+      "gold_sql": "SELECT T2.city, SUM(T1.amount) FROM sales_order AS T1 JOIN customer AS T2 ON T1.customer_id = T2.customer_id GROUP BY T2.city",
+      "gold_rows": 3,
+      "pred_rows": 1
+    },
+    {
+      "db_id": "store_sales",
+      "question": "What is the total revenue for each product category?",
+      "difficulty": "hard",
+      "status": "wrong",
+      "generator": "deterministic",
+      "predicted_sql": "SELECT   \"product_name\" AS product_name,   SUM(\"unit_price\") AS sum_unit_price FROM \"product\" GROUP BY   \"product_name\" ORDER BY   sum_unit_price DESC NULLS FIRST LIMIT 50",
+      "gold_sql": "SELECT T2.category, SUM(T1.amount) FROM sales_order AS T1 JOIN product AS T2 ON T1.product_id = T2.product_id GROUP BY T2.category",
+      "gold_rows": 3,
+      "pred_rows": 4
+    }
+  ]
+}

@@ -30,7 +30,8 @@ def evals():
     """Serve the eval reports for the in-app 'How accurate is Nexus?' page."""
     out: dict = {}
     for name in ("text2sql_report.json", "sql_safety_report.json",
-                 "forecast_report.json", "rag_report.json"):
+                 "forecast_report.json", "rag_report.json",
+                 "spider_report.json"):
         path = EVALS_DIR / name
         if path.exists():
             out[name.replace("_report.json", "")] = json.loads(path.read_text())

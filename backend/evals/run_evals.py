@@ -1,18 +1,23 @@
 """Nexus BI evaluation suite — measured, not asserted.
 
-Produces four JSON reports consumed by the in-app "How accurate is Nexus?" page:
+Produces five JSON reports consumed by the in-app "How accurate is Nexus?" page:
   * sql_safety_report.json   — % of adversarial questions blocked (target 100%)
   * text2sql_report.json     — data integrity + Nexus generator execution accuracy
   * forecast_report.json     — backtest MAPE / RMSE on the monthly revenue series
   * rag_report.json          — schema-retrieval precision/recall vs labeled tables
+  * spider_report.json       — Spider/BIRD execution accuracy on a per-DB benchmark
 
 Run:  python -m evals.run_evals   (from backend/)
+
+The Spider/BIRD suite runs the bundled self-contained fixture by default. Point
+it at a downloaded dev set with SPIDER_DIR / BIRD_DIR (see docs/SPIDER_BIRD.md).
 """
 from __future__ import annotations
 
 import ast
 import csv
 import json
+import os
 from pathlib import Path
 
 from app.agents.graph import run_analysis_collect
@@ -221,12 +226,34 @@ def eval_rag() -> dict:
     }
 
 
+# ---------------------------------------------------------------- spider/bird
+def eval_spider() -> dict:
+    """Spider/BIRD execution-accuracy benchmark.
+
+    Runs the bundled self-contained fixture by default. If SPIDER_DIR or BIRD_DIR
+    points at a downloaded dev set, that runs instead (optionally capped by
+    SPIDER_LIMIT so a full run is opt-in). See docs/SPIDER_BIRD.md.
+    """
+    from evals.spider_bench import run_benchmark
+
+    spider_dir = os.getenv("SPIDER_DIR")
+    bird_dir = os.getenv("BIRD_DIR")
+    limit = os.getenv("SPIDER_LIMIT")
+    limit_n = int(limit) if limit and limit.isdigit() else None
+    if bird_dir:
+        return run_benchmark(Path(bird_dir), dataset="bird", limit=limit_n)
+    if spider_dir:
+        return run_benchmark(Path(spider_dir), dataset="spider", limit=limit_n)
+    return run_benchmark(None, limit=limit_n)  # bundled fixture
+
+
 def main(gate: bool = False) -> None:
     reports = {
         "sql_safety_report.json": eval_safety(),
         "text2sql_report.json": eval_text2sql(),
         "forecast_report.json": eval_forecast(),
         "rag_report.json": eval_rag(),
+        "spider_report.json": eval_spider(),
     }
     for name, rep in reports.items():
         (OUT / name).write_text(json.dumps(rep, indent=2))
@@ -235,6 +262,7 @@ def main(gate: bool = False) -> None:
     t = reports["text2sql_report.json"]
     f = reports["forecast_report.json"]
     r = reports["rag_report.json"]
+    sp = reports["spider_report.json"]
 
     # Keep a standing zero-key baseline, and a separate LLM-mode snapshot, so an
     # upgrade to Groq/Ollama is always comparable against the free-tier default.
@@ -271,6 +299,14 @@ def main(gate: bool = False) -> None:
           f"RMSE={f.get('RMSE')}")
     print(f"RAG       : table recall {r['table_recall']*100:.0f}%, "
           f"fully-grounded {r['questions_fully_grounded']}/{r['graded']}")
+    sp_acc = sp.get("execution_accuracy")
+    if sp_acc is not None:
+        sp_by = ", ".join(f"{d}={round(v*100)}%" if v is not None else f"{d}=—"
+                          for d, v in sp.get("accuracy_by_difficulty", {}).items())
+        print(f"SPIDER/BIRD: [{sp['generator_mode']}] EX {sp['correct']}/{sp['total']} "
+              f"({sp_acc*100:.0f}%) on {sp['dataset_format']} "
+              f"[{sp['source'].split(' (')[0]}]"
+              + (f"; by difficulty: {sp_by}" if sp_by else ""))
     print("=" * 60)
     print(f"Reports written to {OUT}/")
 

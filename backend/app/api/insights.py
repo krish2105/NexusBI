@@ -66,6 +66,7 @@ def trust_summary():
     t2s = reports.get("text2sql", {}) if isinstance(reports, dict) else {}
     forecast = reports.get("forecast", {}) if isinstance(reports, dict) else {}
     rag = reports.get("rag", {}) if isinstance(reports, dict) else {}
+    spider = reports.get("spider", {}) if isinstance(reports, dict) else {}
 
     return {
         "safety": {
@@ -79,6 +80,9 @@ def trust_summary():
             "generator_execution_accuracy": t2s.get("nexus_generator_execution_accuracy"),
             "forecast_mape_pct": forecast.get("MAPE_pct"),
             "rag_table_recall": rag.get("table_recall"),
+            "spider_execution_accuracy": spider.get("execution_accuracy"),
+            "spider_dataset": spider.get("dataset_format"),
+            "spider_generator_mode": spider.get("generator_mode"),
         },
         "governance": {
             "queries_executed": executed,

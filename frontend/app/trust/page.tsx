@@ -54,6 +54,15 @@ export default function Trust() {
         <Metric label="Forecast MAPE" value={acc.forecast_mape_pct != null ? `${acc.forecast_mape_pct}%` : "—"} sub="3-month backtest" />
         <Metric label="RAG table recall" value={pct(acc.rag_table_recall)} sub="schema grounding" />
       </div>
+      {acc.spider_execution_accuracy != null && (
+        <div className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          <Metric
+            label="Spider/BIRD EX"
+            value={pct(acc.spider_execution_accuracy)}
+            sub={`execution accuracy · ${acc.spider_generator_mode ?? "deterministic"}`}
+          />
+        </div>
+      )}
 
       {/* principles */}
       <section className="mt-10 grid gap-4 md:grid-cols-2">

@@ -249,7 +249,7 @@ def _seasonal_naive(train: list[float], horizon: int, period: int) -> list[float
     return [train[-m + (i % m)] for i in range(horizon)]
 
 
-def _metrics(actual: list[float], preds: list[float], method: str, holdout: int,
+def _metrics(actual: list[float], preds: list[float], method: str, folds: int,
              lo: list[float] | None = None, hi: list[float] | None = None) -> dict:
     """Pooled error metrics across the rolling-origin folds this method ran on.
 
@@ -260,7 +260,7 @@ def _metrics(actual: list[float], preds: list[float], method: str, holdout: int,
     not merely asserted."""
     out = {
         "method": method,
-        "folds": len(preds) // holdout if holdout else 0,
+        "folds": folds,
         "mape_pct": _masked_mape(actual, preds),
         "rmse": _rmse(actual, preds),
         "mae": _mae(actual, preds),
@@ -298,69 +298,109 @@ def _backtest_series(pool: TargetPool, grain: str, holdout: int, min_points: int
 
     names = ("seasonal_naive", "holtwinters", "lstm")
     pooled: dict[str, dict[str, list]] = {
-        k: {"pred": [], "act": [], "lo": [], "hi": []} for k in names}
+        k: {"pred": [], "act": [], "lo": [], "hi": [], "folds": 0} for k in names}
     labels_seen: dict[str, str] = {}
     lstm_ran = False
     last_display: dict[str, list] = {}
 
     for origin in origins:
         tr_l, tr_v = labels[:origin], values[:origin]
+        fut_labels = labels[origin:origin + holdout]
         actual = values[origin:origin + holdout]
         period = _seasonal_periods(tr_l)
 
+        # Seasonal-naive predicts positionally from `origin`, so it is aligned to
+        # `actual` by construction (it does not pass through forecast_series).
         sn = _seasonal_naive(tr_v, holdout, period)
         pooled["seasonal_naive"]["pred"] += sn
         pooled["seasonal_naive"]["act"] += actual
+        pooled["seasonal_naive"]["folds"] += 1
         labels_seen["seasonal_naive"] = "Seasonal-naive"
 
         fc_hw = forecast_series(tr_l, tr_v, horizon=holdout,
                                 min_points=min_points, backend="holtwinters")
         if fc_hw:
-            pooled["holtwinters"]["pred"] += fc_hw.point[:holdout]
-            pooled["holtwinters"]["act"] += actual
-            pooled["holtwinters"]["lo"] += fc_hw.lower[:holdout]
-            pooled["holtwinters"]["hi"] += fc_hw.upper[:holdout]
+            _accumulate(pooled["holtwinters"], fc_hw, fut_labels, actual)
             labels_seen["holtwinters"] = fc_hw.method
 
         fc_lstm = forecast_series(tr_l, tr_v, horizon=holdout,
                                   min_points=min_points, backend="lstm")
         if fc_lstm and "LSTM" in fc_lstm.method:
-            pooled["lstm"]["pred"] += fc_lstm.point[:holdout]
-            pooled["lstm"]["act"] += actual
-            pooled["lstm"]["lo"] += fc_lstm.lower[:holdout]
-            pooled["lstm"]["hi"] += fc_lstm.upper[:holdout]
+            _accumulate(pooled["lstm"], fc_lstm, fut_labels, actual)
             labels_seen["lstm"] = fc_lstm.method
             lstm_ran = True
 
         if origin == origins[-1]:  # most recent fold, for the chart/backward-compat
-            last_display = {"actual": [round(a, 2) for a in actual],
-                            "holtwinters": [round(p, 2) for p in
-                                            (fc_hw.point[:holdout] if fc_hw else [])],
-                            "lstm": [round(p, 2) for p in
-                                     (fc_lstm.point[:holdout]
-                                      if fc_lstm and "LSTM" in fc_lstm.method else [])]}
+            hw_al = _align(fc_hw, fut_labels) if fc_hw else None
+            ls_al = (_align(fc_lstm, fut_labels)
+                     if fc_lstm and "LSTM" in fc_lstm.method else None)
+            last_display = {
+                "actual": [round(a, 2) for a in actual],
+                "holtwinters": [round(p, 2) for p in (hw_al["pred"] if hw_al else [])],
+                "lstm": [round(p, 2) for p in (ls_al["pred"] if ls_al else [])]}
 
     methods: dict[str, dict | None] = {}
     for name in names:
         d = pooled[name]
         methods[name] = (
-            _metrics(d["act"], d["pred"], labels_seen[name], holdout,
+            _metrics(d["act"], d["pred"], labels_seen[name], d["folds"],
                      lo=d["lo"] or None, hi=d["hi"] or None)
             if d["pred"] and (name != "lstm" or lstm_ran) else None)
 
+    # `best` is chosen ONLY among engines evaluated on the same (maximum) number
+    # of folds — otherwise a method that abstained on the hard short-train folds
+    # (the monthly LSTM) would be ranked on its few easiest folds against engines
+    # scored over all folds. Methods with fewer folds are still reported, flagged
+    # `comparable: false`, and excluded from `best`.
     scored = {k: v for k, v in methods.items() if v and v.get("rmse") is not None}
-    best = min(scored, key=lambda k: scored[k]["rmse"]) if scored else None
+    max_folds = max((v["folds"] for v in scored.values()), default=0)
+    for v in scored.values():
+        v["comparable"] = v["folds"] == max_folds
+    comparable = {k: v for k, v in scored.items() if v["folds"] == max_folds}
+    best = min(comparable, key=lambda k: comparable[k]["rmse"]) if comparable else None
     return {
         "grain": grain,
         "points": n,
         "holdout": holdout,
         "n_origins": len(origins),
         "seasonal_period": _seasonal_periods(labels),
-        "eval": "rolling-origin (walk-forward), errors pooled across folds",
+        "eval": ("rolling-origin (walk-forward), errors pooled across folds; "
+                 "`best` ranks only engines run on all folds"),
         "last_fold": last_display,
         "methods": methods,
         "best": best,
     }
+
+
+def _align(fc, fut_labels: list[str]) -> dict:
+    """Align a forecast to the expected future labels BY LABEL, not by position.
+
+    forecast_series re-runs boundary trimming on each fold's prefix; if the prefix
+    ends on a sub-threshold day (the daily series has zero-revenue days) the model
+    forecasts from an earlier origin, so its ``periods`` shift. Matching on the
+    label keeps every predicted point paired with the correct actual — a shifted
+    point simply drops out instead of silently comparing against the wrong day."""
+    by_period = {p: i for i, p in enumerate(fc.periods)}
+    pred, lo, hi, mask = [], [], [], []
+    for fl in fut_labels:
+        i = by_period.get(fl)
+        if i is None:
+            mask.append(False)
+            continue
+        pred.append(fc.point[i])
+        lo.append(fc.lower[i])
+        hi.append(fc.upper[i])
+        mask.append(True)
+    return {"pred": pred, "lo": lo, "hi": hi, "mask": mask}
+
+
+def _accumulate(bucket: dict, fc, fut_labels: list[str], actual: list[float]) -> None:
+    al = _align(fc, fut_labels)
+    bucket["pred"] += al["pred"]
+    bucket["lo"] += al["lo"]
+    bucket["hi"] += al["hi"]
+    bucket["act"] += [a for a, keep in zip(actual, al["mask"]) if keep]
+    bucket["folds"] += 1        # this engine ran this fold (fold count, not point count)
 
 
 # ---------------------------------------------------------------- rag

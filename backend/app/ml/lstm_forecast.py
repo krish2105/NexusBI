@@ -41,9 +41,12 @@ _FIT_LOCK = threading.Lock()
 
 # Small bounded cache: determinism means identical inputs → identical output, so a
 # repeated query needn't retrain. Copies are stored/returned so a caller mutating
-# ``notes`` (forecast_series inserts a trim note) can't corrupt the cache.
+# ``notes`` (forecast_series inserts a trim note) can't corrupt the cache. All
+# reads/writes go through _CACHE_LOCK — the OrderedDict is process-global and a
+# concurrent evict during a read would otherwise make move_to_end raise KeyError.
 _CACHE: "OrderedDict[tuple, Forecast]" = OrderedDict()
 _CACHE_MAX = 32
+_CACHE_LOCK = threading.Lock()
 
 
 def _phase(label: str, period: int) -> float:
@@ -75,8 +78,8 @@ def _config_key() -> tuple:
 
     return (settings.lstm_lookback, settings.lstm_hidden_size, settings.lstm_epochs,
             settings.lstm_lr, settings.lstm_weight_decay, settings.lstm_dropout,
-            settings.lstm_seed, settings.lstm_z, settings.lstm_min_points,
-            settings.lstm_min_windows)
+            settings.lstm_grad_clip, settings.lstm_seed, settings.lstm_z,
+            settings.lstm_min_points, settings.lstm_min_windows)
 
 
 def lstm_forecast(labels: list[str], values: list[float], horizon: int,
@@ -89,16 +92,18 @@ def lstm_forecast(labels: list[str], values: list[float], horizon: int,
     """
     key = (tuple(labels), tuple(values), horizon, tuple(fut_labels), seasonal,
            _config_key())
-    hit = _CACHE.get(key)
-    if hit is not None:
-        _CACHE.move_to_end(key)
-        return _copy_fc(hit)
+    with _CACHE_LOCK:                       # atomic get+LRU-touch
+        hit = _CACHE.get(key)
+        if hit is not None:
+            _CACHE.move_to_end(key)
+            return _copy_fc(hit)
 
     fc = _fit_and_forecast(labels, values, horizon, fut_labels, seasonal)
     if fc is not None:
-        _CACHE[key] = _copy_fc(fc)
-        while len(_CACHE) > _CACHE_MAX:
-            _CACHE.popitem(last=False)
+        with _CACHE_LOCK:                   # atomic store+evict
+            _CACHE[key] = _copy_fc(fc)
+            while len(_CACHE) > _CACHE_MAX:
+                _CACHE.popitem(last=False)
     return fc
 
 

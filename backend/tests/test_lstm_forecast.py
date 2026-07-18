@@ -108,3 +108,66 @@ def test_lstm_wired_through_forecast_series():
     labels, values = _daily(220)
     fc = forecast_series(labels, values, horizon=14, min_points=6, backend="lstm")
     assert fc is not None and "LSTM" in fc.method
+
+
+def test_cache_key_includes_grad_clip(monkeypatch):
+    """A grad-clip change must miss the cache (it changes the trained model)."""
+    from app.config import settings
+    from app.ml.lstm_forecast import _config_key
+
+    k1 = _config_key()
+    monkeypatch.setattr(settings, "lstm_grad_clip", settings.lstm_grad_clip + 4.0)
+    assert _config_key() != k1
+
+
+def test_cache_is_concurrency_safe():
+    """Concurrent calls with cache-eviction pressure must never raise (the
+    get/move_to_end/store/evict sequence is lock-guarded)."""
+    import threading
+
+    errors: list = []
+
+    def worker(idx: int):
+        try:
+            for j in range(3):
+                labels, base = _daily(80)
+                values = [v + (idx * 7 + j) % 40 for v in base]  # many distinct keys
+                fut = _next_period_labels(labels[-1], 7)
+                lstm_forecast(labels, values, 7, fut, 7)
+        except Exception as e:  # noqa: BLE001
+            errors.append(repr(e))
+
+    threads = [threading.Thread(target=worker, args=(i,)) for i in range(8)]
+    for t in threads:
+        t.start()
+    for t in threads:
+        t.join()
+    assert not errors, errors[:3]
+
+
+def test_global_thread_state_restored_after_concurrent_fits():
+    """After fits (even concurrent), torch's thread count is back to the original."""
+    before = torch.get_num_threads()
+    labels, values = _daily(200)
+    fut = _next_period_labels(labels[-1], 7)
+    lstm_forecast(labels, values, 7, fut, 7)
+    assert torch.get_num_threads() == before
+
+
+def test_monthly_head_to_head_is_fair(_demo_db):
+    """On the short monthly series the LSTM clears the data floor on only the
+    longest fold(s); it must be flagged non-comparable and excluded from `best`,
+    so the winner is an engine evaluated on every fold (no apples-to-oranges)."""
+    from evals.run_evals import _backtest_series
+    from app.db.target_pool import TargetPool
+
+    cmp = _backtest_series(TargetPool(), "monthly", holdout=3, min_points=6)
+    lstm = cmp["methods"]["lstm"]
+    if lstm is not None:                       # LSTM ran on some (but not all) folds
+        max_folds = max(m["folds"] for m in cmp["methods"].values() if m)
+        if lstm["folds"] < max_folds:
+            assert lstm["comparable"] is False
+            assert cmp["best"] != "lstm"       # a non-comparable engine can't win
+    # whatever wins must itself be comparable (ran on all folds)
+    if cmp["best"]:
+        assert cmp["methods"][cmp["best"]]["comparable"] is True

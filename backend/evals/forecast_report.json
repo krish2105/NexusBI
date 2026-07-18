@@ -25,7 +25,7 @@
       "holdout": 3,
       "n_origins": 3,
       "seasonal_period": 12,
-      "eval": "rolling-origin (walk-forward), errors pooled across folds",
+      "eval": "rolling-origin (walk-forward), errors pooled across folds; `best` ranks only engines run on all folds",
       "last_fold": {
         "actual": [
           865124.31,
@@ -49,7 +49,8 @@
           "folds": 3,
           "mape_pct": 40.45,
           "rmse": 413967.27,
-          "mae": 371000.35
+          "mae": 371000.35,
+          "comparable": true
         },
         "holtwinters": {
           "method": "Holt-Winters (add trend)",
@@ -58,7 +59,8 @@
           "rmse": 167294.69,
           "mae": 134162.44,
           "band_coverage_95": 0.667,
-          "band_width_mean": 471240.29
+          "band_width_mean": 471240.29,
+          "comparable": true
         },
         "lstm": {
           "method": "LSTM (PyTorch, 1x32, lookback=5)",
@@ -67,10 +69,11 @@
           "rmse": 127854.98,
           "mae": 87651.34,
           "band_coverage_95": 0.667,
-          "band_width_mean": 91177.84
+          "band_width_mean": 91177.84,
+          "comparable": false
         }
       },
-      "best": "lstm"
+      "best": "holtwinters"
     },
     "daily": {
       "grain": "daily",
@@ -78,7 +81,7 @@
       "holdout": 14,
       "n_origins": 6,
       "seasonal_period": 7,
-      "eval": "rolling-origin (walk-forward), errors pooled across folds",
+      "eval": "rolling-origin (walk-forward), errors pooled across folds; `best` ranks only engines run on all folds",
       "last_fold": {
         "actual": [
           45574.04,
@@ -135,7 +138,8 @@
           "folds": 6,
           "mape_pct": 51.94,
           "rmse": 11101.32,
-          "mae": 8076.84
+          "mae": 8076.84,
+          "comparable": true
         },
         "holtwinters": {
           "method": "Holt-Winters (add trend, add seasonal)",
@@ -144,7 +148,8 @@
           "rmse": 10186.58,
           "mae": 7266.92,
           "band_coverage_95": 1.0,
-          "band_width_mean": 61556.42
+          "band_width_mean": 61556.42,
+          "comparable": true
         },
         "lstm": {
           "method": "LSTM (PyTorch, 1x32, lookback=28)",
@@ -153,7 +158,8 @@
           "rmse": 9748.67,
           "mae": 7691.56,
           "band_coverage_95": 0.94,
-          "band_width_mean": 32654.53
+          "band_width_mean": 32654.53,
+          "comparable": true
         }
       },
       "best": "lstm"

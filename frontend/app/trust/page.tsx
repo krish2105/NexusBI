@@ -149,11 +149,17 @@ export default function Trust() {
                     {["seasonal_naive", "holtwinters", "lstm"].map((name) => {
                       const m = g.engines?.[name];
                       const win = g.best === name;
+                      const partial = m && m.comparable === false;
                       return (
                         <tr key={name} className="border-t border-line">
                           <td className={`px-4 py-1.5 ${win ? "font-medium text-pos" : ""}`}>
                             {win && "★ "}
                             {name.replace("_", "-")}
+                            {partial && (
+                              <span className="ml-1 text-[10px] text-ink-faint">
+                                ({m.folds}/{g.n_origins} folds · indicative)
+                              </span>
+                            )}
                           </td>
                           <td className="px-4 py-1.5 font-mono text-xs">
                             {m ? Math.round(m.rmse).toLocaleString() : "—"}

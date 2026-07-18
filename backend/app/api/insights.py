@@ -64,7 +64,7 @@ def _forecast_summary(forecast: dict) -> dict:
         for name, m in (cmp.get("methods") or {}).items():
             engines[name] = None if not m else {
                 "rmse": m.get("rmse"), "mape_pct": m.get("mape_pct"),
-                "folds": m.get("folds"),
+                "folds": m.get("folds"), "comparable": m.get("comparable"),
                 "band_coverage_95": m.get("band_coverage_95"),
             }
         grains[grain] = {"best": cmp.get("best"), "n_origins": cmp.get("n_origins"),

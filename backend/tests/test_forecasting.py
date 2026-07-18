@@ -78,3 +78,41 @@ def test_default_backend_never_imports_torch(monkeypatch):
     labels, values = _daily(120)
     fc = forecast_series(labels, values, horizon=7)   # backend defaults to holtwinters
     assert fc is not None and not called["lstm"]
+
+
+def test_backtest_align_by_label_drops_shifted_points():
+    """A forecast whose periods are shifted (re-trimmed prefix) must be aligned to
+    the expected future labels BY LABEL, not positionally — a non-matching day is
+    dropped rather than compared against the wrong actual."""
+    from evals.run_evals import _align
+    from app.ml.forecasting import Forecast
+
+    fut = ["2021-02-01", "2021-02-02", "2021-02-03"]
+    # Forecast shifted one day early (trim ate the prefix tail): first period is a
+    # day BEFORE the horizon, last expected day is missing.
+    fc = Forecast(method="x", horizon=3,
+                  periods=["2021-01-31", "2021-02-01", "2021-02-02"],
+                  point=[10, 20, 30], lower=[1, 2, 3], upper=[100, 200, 300],
+                  history_periods=[], history_values=[], notes=[])
+    al = _align(fc, fut)
+    assert al["pred"] == [20, 30]          # only the two matching days survive
+    assert al["mask"] == [True, True, False]
+    assert al["lo"] == [2, 3] and al["hi"] == [200, 300]
+
+
+def test_seasonal_naive_reference():
+    from evals.run_evals import _seasonal_naive
+
+    # weekly period: repeats the last 7 values
+    train = list(range(1, 15))              # 1..14
+    assert _seasonal_naive(train, 3, 7) == [8, 9, 10]
+    # no season: repeats the last value
+    assert _seasonal_naive(train, 3, 1) == [14, 14, 14]
+
+
+def test_masked_mape_ignores_zero_actuals():
+    from evals.run_evals import _masked_mape
+
+    # zero actuals are skipped (a daily series has zero-revenue days)
+    assert _masked_mape([0, 100], [50, 90]) == 10.0     # only the 100 vs 90 counts
+    assert _masked_mape([0, 0], [5, 5]) is None         # all zero → undefined

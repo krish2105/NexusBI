@@ -76,10 +76,12 @@ the wrong database, on a floating dependency, defending a moat two lines of SQL 
 
 **The 5 things most holding back the score**
 
-1. **Ephemeral persistence (cited by 5 of 6 reviewers).** `AppStore` asserts `sqlite:///` only;
-   no Postgres adapter; `render.yaml` mounts no disk. Every redeploy wipes users, encrypted
-   DSNs, audit log, monitors, uploads. Nothing else matters until this is fixed — and it
-   contradicts what the docs claim.
+1. ~~**Ephemeral persistence (cited by 5 of 6 reviewers).**~~ ✅ **FIXED.** `AppStore` now has a
+   Postgres backend (dialect shim: `?`→`%s`, `INSERT OR REPLACE`→`ON CONFLICT`, `DOUBLE PRECISION`
+   timestamps, `information_schema` migration); set `APP_DB_URL` to a free Supabase/Neon Postgres
+   and all state survives redeploys. Verified: the full 146-test backend suite passes against a
+   real Postgres, plus a persistence-across-restart round-trip. `render.yaml` + `docs/DEPLOY.md`
+   updated. *(Original finding: asserted `sqlite:///` only; Render mounts no disk.)*
 2. **No monetization or metering surface at all.** Cannot charge today; true COGS (ML CPU +
    BYO-CSV storage) is uncapped.
 3. **Broken access control / multi-tenancy.** Monitors unauthenticated + unscoped;

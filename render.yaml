@@ -32,9 +32,15 @@ services:
         generateValue: true
       - key: ENCRYPTION_KEY
         generateValue: true
-      # --- Production Postgres path (optional; default is the bundled SQLite demo) ---
-      # - key: APP_DB_URL              # Supabase Postgres
-      #   sync: false
+      # --- Durable app DB (STRONGLY RECOMMENDED on the free plan) ---
+      # Render's free filesystem is ephemeral: without this, all users,
+      # connections, audit log, monitors, feedback and history are wiped on every
+      # redeploy/spin-down. Point APP_DB_URL at a free managed Postgres
+      # (Supabase or Neon — both have $0 tiers) so state persists. Paste the DSN
+      # in the Render dashboard (Environment tab). See docs/DEPLOY.md.
+      - key: APP_DB_URL                # postgresql://…  (Supabase/Neon free tier)
+        sync: false
+      # --- Production target DB (optional; default is the bundled SQLite demo) ---
       # - key: DEMO_TARGET_URL         # read-only Postgres DSN
       #   sync: false
       # --- Update this to your real Vercel domain after the frontend deploys ---

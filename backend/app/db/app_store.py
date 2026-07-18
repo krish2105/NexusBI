@@ -1,8 +1,16 @@
 """App-metadata store — connections, query history, dashboards, audit log.
 
-Kept deliberately dependency-light (stdlib sqlite3) so the project runs on the
-free tier with zero setup. The DSN is configurable (``app_db_url``); point it at
-a Supabase Postgres URL in production and swap the driver in one place.
+Runs on **SQLite** by default (stdlib, zero-setup, great for local dev) and on
+**Postgres** in production for durability — pick the backend by ``app_db_url``
+scheme (``sqlite:///…`` vs ``postgresql://…``). This matters on hosts with an
+ephemeral filesystem (e.g. Render's free plan): point ``APP_DB_URL`` at a free
+managed Postgres (Supabase/Neon) so users, connections + encrypted DSNs, the
+audit log, monitors, feedback, dashboards and history survive a redeploy.
+
+The two dialects share one set of methods via a thin shim (``_Conn`` + ``_to_pg``):
+the method bodies write SQLite-flavoured SQL (``?`` params, ``INSERT OR REPLACE``)
+and the shim rewrites it for Postgres (``%s`` params, ``ON CONFLICT`` upsert), so
+there is exactly one place that knows about dialects.
 
 The app DB is strictly separate from the target/user DB (target_pool.py).
 The ``audit_log`` table is append-only by contract: this module exposes only
@@ -11,6 +19,7 @@ insert + read for it — never update or delete.
 from __future__ import annotations
 
 import json
+import re
 import sqlite3
 import time
 import uuid
@@ -19,58 +28,122 @@ from typing import Any
 
 from app.config import settings
 
+# Types are chosen to be valid on BOTH engines: DOUBLE PRECISION (not REAL) so
+# epoch timestamps keep full precision on Postgres, where REAL is only 4 bytes;
+# SQLite maps DOUBLE PRECISION to its REAL (8-byte) affinity, so it's unchanged there.
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL,
-  api_key_hash TEXT NOT NULL, created_at REAL NOT NULL
+  api_key_hash TEXT NOT NULL, created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS connections (
   id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL,
   target_url TEXT NOT NULL, db_kind TEXT NOT NULL, is_readonly INTEGER NOT NULL,
-  created_at REAL NOT NULL
+  created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS glossary (
   id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, term TEXT NOT NULL,
-  sql_definition TEXT, description TEXT, created_at REAL NOT NULL
+  sql_definition TEXT, description TEXT, created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS conversations (
   id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, title TEXT,
-  created_at REAL NOT NULL, updated_at REAL NOT NULL
+  created_at DOUBLE PRECISION NOT NULL, updated_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS queries (
   id TEXT PRIMARY KEY, user_id TEXT, connection_id TEXT NOT NULL,
   question TEXT NOT NULL, sql TEXT, confidence TEXT,
-  assumptions TEXT, result_meta TEXT, payload TEXT, created_at REAL NOT NULL,
+  assumptions TEXT, result_meta TEXT, payload TEXT, created_at DOUBLE PRECISION NOT NULL,
   conversation_id TEXT, turn_index INTEGER, context TEXT
 );
 CREATE TABLE IF NOT EXISTS dashboards (
   id TEXT PRIMARY KEY, user_id TEXT, name TEXT NOT NULL,
-  layout TEXT, created_at REAL NOT NULL
+  layout TEXT, created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS dashboard_items (
   id TEXT PRIMARY KEY, dashboard_id TEXT NOT NULL, query_id TEXT NOT NULL,
-  position TEXT, created_at REAL NOT NULL
+  position TEXT, created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS audit_log (
   id TEXT PRIMARY KEY, actor TEXT, action TEXT NOT NULL, sql_text TEXT,
-  row_count INTEGER, latency_ms REAL, verdict TEXT, detail TEXT,
-  created_at REAL NOT NULL
+  row_count INTEGER, latency_ms DOUBLE PRECISION, verdict TEXT, detail TEXT,
+  created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS feedback (
   id TEXT PRIMARY KEY, query_id TEXT NOT NULL, connection_id TEXT,
-  question TEXT, sql TEXT, rating TEXT NOT NULL, note TEXT, created_at REAL NOT NULL
+  question TEXT, sql TEXT, rating TEXT NOT NULL, note TEXT, created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS monitors (
   id TEXT PRIMARY KEY, name TEXT NOT NULL, question TEXT NOT NULL,
   connection_id TEXT NOT NULL, schedule TEXT, enabled INTEGER NOT NULL,
-  last_run_at REAL, last_status TEXT, created_at REAL NOT NULL
+  last_run_at DOUBLE PRECISION, last_status TEXT, created_at DOUBLE PRECISION NOT NULL
 );
 CREATE TABLE IF NOT EXISTS alerts (
   id TEXT PRIMARY KEY, monitor_id TEXT NOT NULL, monitor_name TEXT,
-  severity TEXT NOT NULL, message TEXT NOT NULL, metric REAL, detail TEXT,
-  acknowledged INTEGER NOT NULL DEFAULT 0, created_at REAL NOT NULL
+  severity TEXT NOT NULL, message TEXT NOT NULL, metric DOUBLE PRECISION, detail TEXT,
+  acknowledged INTEGER NOT NULL DEFAULT 0, created_at DOUBLE PRECISION NOT NULL
 );
 """
+
+
+# --- dialect shim: one place that knows SQLite-SQL differs from Postgres-SQL ---
+_UPSERT_RE = re.compile(r"INSERT OR REPLACE INTO\s+(\w+)\s*\(([^)]+)\)", re.IGNORECASE)
+
+
+def _rewrite_upsert(sql: str) -> str:
+    """SQLite ``INSERT OR REPLACE`` → Postgres ``INSERT … ON CONFLICT (id) DO UPDATE``.
+    The tables that use it are all keyed on ``id``."""
+    m = _UPSERT_RE.search(sql)
+    if not m:
+        return sql.replace("INSERT OR REPLACE INTO", "INSERT INTO")
+    cols = [c.strip() for c in m.group(2).split(",")]
+    setters = ", ".join(f"{c}=EXCLUDED.{c}" for c in cols if c.lower() != "id")
+    sql = sql.replace("INSERT OR REPLACE INTO", "INSERT INTO")
+    return f"{sql} ON CONFLICT (id) DO UPDATE SET {setters}"
+
+
+def _to_pg(sql: str) -> str:
+    """Translate a SQLite-flavoured statement to Postgres: qmark params → ``%s``
+    and ``INSERT OR REPLACE`` → an ``ON CONFLICT`` upsert. (The app-store SQL
+    contains no ``%`` or ``?`` literals, so the substitution is safe.)"""
+    if "OR REPLACE" in sql:
+        sql = _rewrite_upsert(sql)
+    return sql.replace("?", "%s")
+
+
+class _Conn:
+    """Uniform connection wrapper over sqlite3 / psycopg2 so the store's methods
+    are dialect-agnostic. Commits (or rolls back) and closes on ``with`` exit —
+    per-call connections keep us well under managed-Postgres connection caps."""
+
+    def __init__(self, raw, kind: str):
+        self._raw = raw
+        self._kind = kind
+
+    def execute(self, sql: str, params: tuple = ()):  # returns a cursor
+        if self._kind == "postgres":
+            cur = self._raw.cursor()
+            cur.execute(_to_pg(sql), params)
+            return cur
+        return self._raw.execute(sql, params)
+
+    def executescript(self, script: str):
+        if self._kind == "postgres":
+            cur = self._raw.cursor()
+            cur.execute(script)  # psycopg2 runs a multi-statement string in one call
+            return cur
+        return self._raw.executescript(script)
+
+    def __enter__(self) -> "_Conn":
+        return self
+
+    def __exit__(self, exc_type, exc, tb) -> None:
+        try:
+            if exc_type is None:
+                self._raw.commit()
+            else:
+                self._raw.rollback()
+        finally:
+            self._raw.close()
 
 
 def _now() -> float:
@@ -84,24 +157,47 @@ def _uid() -> str:
 class AppStore:
     def __init__(self, url: str | None = None):
         self.url = url or settings.app_db_url
-        assert self.url.startswith("sqlite:///"), (
-            "AppStore ships with a SQLite driver; set a Postgres adapter for prod")
-        self.path = Path(self.url.replace("sqlite:///", "", 1))
-        self.path.parent.mkdir(parents=True, exist_ok=True)
+        if self.url.startswith("sqlite:///"):
+            self.kind = "sqlite"
+            self.path = Path(self.url.replace("sqlite:///", "", 1))
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+        elif self.url.startswith(("postgresql://", "postgres://")):
+            self.kind = "postgres"
+            self.dsn = self.url
+        else:
+            raise ValueError(
+                f"Unsupported app_db_url scheme (want sqlite:/// or postgresql://): "
+                f"{self.url!r}")
         self._init_schema()
 
-    def _con(self) -> sqlite3.Connection:
-        con = sqlite3.connect(self.path, timeout=10)
-        con.row_factory = sqlite3.Row
-        con.execute("PRAGMA journal_mode=WAL")
-        return con
+    def _con(self) -> _Conn:
+        if self.kind == "sqlite":
+            con = sqlite3.connect(self.path, timeout=10)
+            con.row_factory = sqlite3.Row
+            con.execute("PRAGMA journal_mode=WAL")
+            return _Conn(con, "sqlite")
+        import psycopg2
+        import psycopg2.extras
+
+        # DictCursor rows support BOTH r["col"] and r[0], matching sqlite3.Row,
+        # so every method body reads rows the same way on either engine.
+        con = psycopg2.connect(self.dsn, connect_timeout=10,
+                               cursor_factory=psycopg2.extras.DictCursor)
+        return _Conn(con, "postgres")
+
+    def _existing_columns(self, con: _Conn, table: str) -> set[str]:
+        if self.kind == "sqlite":
+            return {r[1] for r in con.execute(f"PRAGMA table_info({table})")}
+        return {r[0] for r in con.execute(
+            "SELECT column_name FROM information_schema.columns WHERE table_name=?",
+            (table,))}
 
     def _init_schema(self) -> None:
         with self._con() as con:
             con.executescript(_SCHEMA)
             # Lightweight migration: add conversation columns to a pre-existing
             # queries table (older app DBs created before multi-turn support).
-            existing = {r[1] for r in con.execute("PRAGMA table_info(queries)")}
+            existing = self._existing_columns(con, "queries")
             for col, decl in (("conversation_id", "TEXT"),
                               ("turn_index", "INTEGER"),
                               ("context", "TEXT")):
@@ -360,11 +456,15 @@ class AppStore:
                 "satisfaction_rate": round(up / total, 4) if total else None}
 
     def vetted_examples(self, limit: int = 20) -> list[dict]:
-        """👍'd answers become verified (question -> SQL) few-shot examples."""
+        """👍'd answers become verified (question -> SQL) few-shot examples.
+
+        GROUP BY (not SELECT DISTINCT) so the recency ORDER BY is valid on both
+        engines — Postgres rejects ordering a DISTINCT by a non-selected column."""
         with self._con() as con:
             rows = con.execute(
-                "SELECT DISTINCT question, sql FROM feedback WHERE rating='up' "
-                "AND sql IS NOT NULL ORDER BY created_at DESC LIMIT ?",
+                "SELECT question, sql FROM feedback WHERE rating='up' "
+                "AND sql IS NOT NULL GROUP BY question, sql "
+                "ORDER BY MAX(created_at) DESC LIMIT ?",
                 (limit,)).fetchall()
         return [dict(r) for r in rows]
 

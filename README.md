@@ -40,6 +40,24 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 - **Trust Center** (`/trust`) — safety red-team results, live governance counts (executed vs blocked, audit size), accuracy metrics, and feedback satisfaction — trust as a product surface.
 - **Feedback loop** — 👍/👎 on every answer; approved (question→SQL) pairs become verified few-shot examples that improve future generation.
 
+## Open source: `sqlguard` — the safety layer as a standalone package
+
+The five-layer text-to-SQL guard is extracted into its own MIT-licensed,
+`pip install`-able package — **[`packages/sqlguard`](packages/sqlguard)** — so
+anyone building text-to-SQL can drop it in front of their own LLM + database:
+
+```python
+from sqlguard import SqlGuard
+guard = SqlGuard({"orders": {"id", "amount"}}, target_dialect="mysql")
+guard.check("SELECT amount FROM orders").allowed   # True
+guard.check("DROP TABLE orders").allowed           # False
+```
+
+Its only dependency is `sqlglot`, it blocks **100% of the adversarial red-team
+set** (same eval, run in its own CI across Python 3.10–3.13), ships a CLI
+(`sqlguard check "…"`), and is build-verified + `twine check`-clean, ready for
+PyPI. See [`packages/sqlguard/README.md`](packages/sqlguard/README.md).
+
 ## Measured results (`make eval`)
 
 | Suite | Result |

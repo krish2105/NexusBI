@@ -5,6 +5,9 @@ __pycache__/
 venv/
 *.egg-info/
 .pytest_cache/
+# Python build artifacts (packages/*/dist holds wheels + sdists)
+dist/
+build/
 
 # Nexus runtime
 backend/var/

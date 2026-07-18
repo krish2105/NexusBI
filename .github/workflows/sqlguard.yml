@@ -1,0 +1,38 @@
+name: sqlguard
+
+# Independent CI for the extractable OSS package (packages/sqlguard). Keeps the
+# library green on its own, on multiple Python versions, so it's release-ready.
+on:
+  push:
+    branches: [main]
+    paths: ["packages/sqlguard/**", ".github/workflows/sqlguard.yml"]
+  pull_request:
+    branches: [main]
+    paths: ["packages/sqlguard/**", ".github/workflows/sqlguard.yml"]
+
+jobs:
+  test:
+    name: sqlguard · py${{ matrix.python }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: packages/sqlguard
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ["3.10", "3.11", "3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install (editable, with test extra)
+        run: pip install -e ".[test]"
+      - name: Run tests (incl. 100%-adversarial-blocked eval)
+        run: python -m pytest -q
+      - name: Build + validate distribution
+        run: |
+          pip install build twine
+          python -m build
+          twine check dist/*

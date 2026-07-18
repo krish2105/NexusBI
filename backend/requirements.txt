@@ -47,6 +47,7 @@ langfuse==4.14.0           # free-tier tracing (Tier 1: observability)
 # --- Phase 3: shared state for horizontal scale (Upstash free tier). Optional at
 #     runtime — unset REDIS_URL falls back to an in-process limiter/cache. ---
 redis==5.2.1               # distributed rate limiter + allow-list cache
+sentry-sdk[fastapi]==2.66.0  # error tracking — no-op unless SENTRY_DSN is set
 
 # --- Durable app-metadata store ---
 # Postgres driver for the app DB. Local dev defaults to SQLite (no driver needed),

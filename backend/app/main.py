@@ -23,6 +23,8 @@ log = logging.getLogger("nexus")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    from app.core.monitoring import init_sentry
+    init_sentry()  # no-op unless SENTRY_DSN is set
     # Ensure the demo target DB exists (idempotent) and app store is initialized.
     if settings.demo_target_url.startswith("sqlite"):
         try:

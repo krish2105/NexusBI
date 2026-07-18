@@ -352,3 +352,8 @@ export async function openBillingPortal(): Promise<{ url?: string }> {
   const r = await authFetch(`${BASE}/billing/portal`, { method: "POST" });
   return await r.json().catch(() => ({}));
 }
+
+export async function getStatus() {
+  const r = await authFetch(`${BASE}/status`);
+  return await r.json();
+}

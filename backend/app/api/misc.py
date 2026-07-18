@@ -45,3 +45,41 @@ def health():
             "llm_provider": llm.provider, "demo_target": settings.demo_target_url,
             "safety": "5-layer text-to-SQL guard active",
             "tracing": "langfuse (on)" if tracing_enabled() else "off"}
+
+
+@router.get("/status")
+def status():
+    """Component health for an uptime check / status page. Each component reports
+    ``ok``/``degraded``/``off``; overall is ``degraded`` if any hard dependency
+    (the app DB) is down. Optional services report ``off`` when unconfigured —
+    that's expected on the free tier, not a failure."""
+    from app.core.monitoring import client_ip  # noqa: F401 (import-safety check)
+    from app.core.redis_client import get_redis
+
+    components: dict[str, dict] = {}
+
+    # App metadata DB — the one hard dependency.
+    try:
+        get_store().list_users()
+        components["app_db"] = {"status": "ok",
+                                "backend": get_store().kind}
+    except Exception as e:  # noqa: BLE001
+        components["app_db"] = {"status": "degraded", "detail": str(e)[:120]}
+
+    # Redis (optional): off when unconfigured, ok when reachable.
+    components["redis"] = {
+        "status": "ok" if get_redis() is not None
+        else ("off" if not settings.redis_url else "degraded"),
+        "shared_state": get_redis() is not None,
+    }
+
+    components["llm"] = {"status": "ok", "provider": get_llm().provider}
+    components["safety"] = {"status": "ok", "guard": "5-layer, sqlguard-backed"}
+    components["error_tracking"] = {
+        "status": "ok" if settings.sentry_dsn else "off"}
+    components["billing"] = {
+        "status": "ok" if settings.billing_enabled else "off",
+        "mode": "stripe" if settings.billing_enabled else "free-only"}
+
+    overall = "degraded" if components["app_db"]["status"] != "ok" else "ok"
+    return {"status": overall, "app": settings.app_name, "components": components}

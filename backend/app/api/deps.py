@@ -48,8 +48,9 @@ def require_user(authorization: str | None = Header(None),
 
 # --- rate limit ------------------------------------------------------------
 def rate_limit(request: Request) -> None:
-    key = request.client.host if request.client else "anonymous"
-    ok, retry = limiter.allow(key)
+    from app.core.monitoring import client_ip
+
+    ok, retry = limiter.allow(client_ip(request))
     if not ok:
         raise HTTPException(429, "rate limit exceeded",
                             headers={"Retry-After": str(retry)})

@@ -48,6 +48,7 @@ langfuse==4.14.0           # free-tier tracing (Tier 1: observability)
 #     runtime — unset REDIS_URL falls back to an in-process limiter/cache. ---
 redis==5.2.1               # distributed rate limiter + allow-list cache
 sentry-sdk[fastapi]==2.66.0  # error tracking — no-op unless SENTRY_DSN is set
+stripe==11.4.1             # billing — no-op unless STRIPE_SECRET_KEY is set
 
 # --- Durable app-metadata store ---
 # Postgres driver for the app DB. Local dev defaults to SQLite (no driver needed),

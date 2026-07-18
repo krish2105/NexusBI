@@ -19,6 +19,16 @@ def _demo_db():
     yield
 
 
+@pytest.fixture(autouse=True)
+def _reset_rate_limiter():
+    # Every TestClient request shares one client IP ("testclient"), so the
+    # per-IP rate limiter would otherwise accumulate hits across the whole
+    # session and 429 later tests. Reset its window before each test.
+    from app.core.ratelimit import limiter
+    limiter._hits.clear()
+    yield
+
+
 @pytest.fixture(scope="session")
 def allow_list():
     return build_allow_list()

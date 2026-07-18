@@ -99,6 +99,11 @@ CREATE TABLE IF NOT EXISTS alerts (
   severity TEXT NOT NULL, message TEXT NOT NULL, metric DOUBLE PRECISION, detail TEXT,
   acknowledged INTEGER NOT NULL DEFAULT 0, created_at DOUBLE PRECISION NOT NULL
 );
+CREATE TABLE IF NOT EXISTS usage_events (
+  id TEXT PRIMARY KEY, user_id TEXT NOT NULL, connection_id TEXT,
+  created_at DOUBLE PRECISION NOT NULL
+);
+CREATE INDEX IF NOT EXISTS ix_usage_user_time ON usage_events(user_id, created_at);
 """
 
 
@@ -289,12 +294,23 @@ class AppStore:
             con.execute("UPDATE users SET byo_llm_key_enc=? WHERE id=?",
                         (key_enc, uid))
 
-    def count_user_queries_since(self, uid: str, since_epoch: float) -> int:
-        """Executed queries by a user since a timestamp — powers Free-tier metering."""
+    # --- usage metering (Free-tier caps) ---
+    def record_usage(self, user_id: str, connection_id: str | None = None) -> None:
+        with self._con() as con:
+            con.execute("INSERT INTO usage_events(id,user_id,connection_id,created_at)"
+                        " VALUES(?,?,?,?)", (_uid(), user_id, connection_id, _now()))
+
+    def count_usage_since(self, user_id: str, since_epoch: float) -> int:
         with self._con() as con:
             r = con.execute(
-                "SELECT COUNT(*) FROM queries WHERE user_id=? AND created_at>=?",
-                (uid, since_epoch)).fetchone()
+                "SELECT COUNT(*) FROM usage_events WHERE user_id=? AND created_at>=?",
+                (user_id, since_epoch)).fetchone()
+        return int(r[0])
+
+    def count_user_connections(self, user_id: str) -> int:
+        with self._con() as con:
+            r = con.execute("SELECT COUNT(*) FROM connections WHERE user_id=?",
+                            (user_id,)).fetchone()
         return int(r[0])
 
     def list_users(self) -> list[dict]:

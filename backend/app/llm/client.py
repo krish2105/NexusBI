@@ -8,10 +8,31 @@ provider-agnostic.
 """
 from __future__ import annotations
 
+import contextlib
+import contextvars
 import json
 from dataclasses import dataclass
 
 from app.config import settings
+
+# Per-request Groq key override: a Pro user's BYO key is set here for the duration
+# of their query so generation runs on *their* Groq account (their COGS), without
+# threading a key through every graph node. Unset -> the shared/deterministic path.
+_byo_groq_key: contextvars.ContextVar[str | None] = contextvars.ContextVar(
+    "byo_groq_key", default=None)
+
+
+@contextlib.contextmanager
+def use_groq_key(key: str | None):
+    """Scope a BYO Groq key to a request. No-op when key is falsy."""
+    if not key:
+        yield
+        return
+    token = _byo_groq_key.set(key)
+    try:
+        yield
+    finally:
+        _byo_groq_key.reset(token)
 
 
 @dataclass
@@ -21,14 +42,15 @@ class LLMResponse:
 
 
 class LLMClient:
-    def __init__(self):
+    def __init__(self, groq_key: str | None = None):
+        self._groq_key = groq_key or settings.groq_api_key
         self.provider = self._resolve_provider()
 
     def _resolve_provider(self) -> str:
         pref = settings.llm_provider
         if pref != "auto":
             return pref
-        if settings.groq_api_key:
+        if self._groq_key:
             return "groq"
         if settings.ollama_base_url:
             return "ollama"
@@ -51,7 +73,7 @@ class LLMClient:
     def _groq(self, system, user, json_mode, temperature) -> LLMResponse:  # pragma: no cover
         from groq import Groq
 
-        client = Groq(api_key=settings.groq_api_key)
+        client = Groq(api_key=self._groq_key)
         kwargs = {"response_format": {"type": "json_object"}} if json_mode else {}
         resp = client.chat.completions.create(
             model=settings.groq_model,
@@ -82,6 +104,10 @@ _client: LLMClient | None = None
 
 
 def get_llm() -> LLMClient:
+    # A per-request BYO key (Pro tier) takes precedence over the shared singleton.
+    byo = _byo_groq_key.get()
+    if byo:
+        return LLMClient(groq_key=byo)
     global _client
     if _client is None:
         _client = LLMClient()

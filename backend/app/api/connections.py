@@ -26,6 +26,11 @@ def create_connection(req: ConnectionRequest, user: dict | None = Depends(requir
     store = get_store()
     url = req.target_url or settings.demo_target_url
 
+    # Free-tier connection cap (Pro is uncapped; anonymous/demo use isn't metered).
+    if user:
+        from app.core.plans import check_connection_quota
+        check_connection_quota(user["id"])
+
     # SSRF screen + engine-verified read-only check before we accept anything.
     check = check_connection(url)
     if not check.ok:

@@ -8,13 +8,42 @@ Agentic Decision Intelligence · five-layer text-to-SQL safety · hybrid-RAG sch
 
 [![CI](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml/badge.svg)](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml)
 ![safety](https://img.shields.io/badge/adversarial%20queries%20blocked-100%25-34D399)
-![tests](https://img.shields.io/badge/backend%20tests-169%20passing-6366F1)
+![tests](https://img.shields.io/badge/backend%20tests-183%20passing-6366F1)
 ![free tier](https://img.shields.io/badge/API%20keys-0%20required-22D3EE)
 ![license](https://img.shields.io/badge/data-CC%20BY--NC--SA%204.0-9BA3B4)
 
 ![Nexus BI](docs/img/landing.png)
 
 </div>
+
+---
+
+## See it work
+
+*Every screenshot below is captured from the running app on the real Olist data by
+`npm run screenshots` — a Playwright script that drives an actual question through
+the pipeline. No mockups.*
+
+**Ask a question → safe SQL → chart → narrated insight.** The generated SQL is
+shown, validated read-only, and the answer cites the certified metric it used.
+
+![Workspace](docs/img/workspace.png)
+
+**Ask it to do damage and it refuses** — the input-safety screen blocks the
+question before a model ever sees it.
+
+![Safety layer blocking a destructive question](docs/img/safety-block.png)
+
+<table>
+<tr>
+<td width="50%"><b>Proactive daily briefing</b> — insight without being asked: what moved, why, and what's next.<br/><br/><img src="docs/img/briefing.png" alt="Daily briefing"/></td>
+<td width="50%"><b>Trust Center</b> — safety, accuracy and governance, measured and shown.<br/><br/><img src="docs/img/trust.png" alt="Trust Center"/></td>
+</tr>
+<tr>
+<td width="50%"><b>Semantic layer</b> — governed, certified metric definitions.<br/><br/><img src="docs/img/metrics.png" alt="Governed metrics"/></td>
+<td width="50%"><b>Customer segments</b> — real RFM segmentation.<br/><br/><img src="docs/img/segments.png" alt="Customer segments"/></td>
+</tr>
+</table>
 
 ---
 
@@ -100,6 +129,9 @@ npm run dev                           # http://localhost:3000
 
 # 3) (optional) tests + eval reports
 cd ../backend && python -m pytest && python -m evals.run_evals
+
+# 4) (optional) regenerate the README screenshots from the running app
+cd ../frontend && npx playwright install chromium && npm run screenshots
 ```
 
 Open **http://localhost:3000/app**, click an example chip, and watch the agent build the answer. Try *"delete all orders"* to see the safety layer block it.

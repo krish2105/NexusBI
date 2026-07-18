@@ -141,6 +141,26 @@ def run_analysis(question: str, connection_id: str = "demo",
         plan = resolution.seed_plan   # carried forward from the prior turn + delta
     else:
         plan = plan_question(question)
+    # Semantic layer: if the question names a governed metric, compute it from the
+    # *certified* definition rather than the planner's guess. Skip when a caller
+    # supplied the plan (dashboard tile) or a follow-up carried it forward — those
+    # already carry a resolved metric.
+    governed_metric = None
+    if store and seed_plan is None and not (resolution and resolution.mode == "refine"):
+        try:
+            from app.agents.semantic import resolve_metric, seed_demo_metrics
+            if connection_id == "demo":
+                seed_demo_metrics(store, connection_id)
+            resolved = resolve_metric(display_question, store.list_metrics(connection_id))
+            if resolved:
+                plan["metric"] = {k: resolved[k] for k in ("expr", "base", "alias", "term")}
+                governed_metric = resolved["governed"]
+                # A governed metric overrides the planner's default-revenue guess.
+                plan["assumptions"] = [a for a in plan.get("assumptions", [])
+                                       if not a.startswith("Interpreted 'revenue'")]
+        except Exception:  # noqa: BLE001 - never break analysis on the semantic layer
+            governed_metric = None
+    state["governed_metric"] = governed_metric
     state["plan"] = plan
     state["assumptions"] = list(plan.get("assumptions", []))
     if plan.get("write_intent"):
@@ -153,7 +173,8 @@ def run_analysis(question: str, connection_id: str = "demo",
                              message="Nexus is read-only and cannot modify data."))
         return
     yield emit(_event("planner", "ok", intent=plan["intent_summary"],
-                      assumptions=state["assumptions"]))
+                      assumptions=state["assumptions"],
+                      governed_metric=governed_metric))
 
     # --- schema retriever (RAG) — uses the resolved standalone question ---
     yield emit(_event("schema_retriever", "running", label="Retrieving schema"))
@@ -317,6 +338,7 @@ def _finalize(state: AnalysisState, blocked: bool, message: str | None = None) -
         "resolved_question": state.get("resolved_question"),
         "suggested_followups": state.get("suggested_followups", []),
         "rootcause": state.get("rootcause"),
+        "governed_metric": state.get("governed_metric"),
     }
     return _event("final", "blocked" if blocked else "ok", result=result)
 

@@ -8,7 +8,7 @@ Agentic Decision Intelligence · five-layer text-to-SQL safety · hybrid-RAG sch
 
 [![CI](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml/badge.svg)](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml)
 ![safety](https://img.shields.io/badge/adversarial%20queries%20blocked-100%25-34D399)
-![tests](https://img.shields.io/badge/backend%20tests-110%20passing-6366F1)
+![tests](https://img.shields.io/badge/backend%20tests-169%20passing-6366F1)
 ![free tier](https://img.shields.io/badge/API%20keys-0%20required-22D3EE)
 ![license](https://img.shields.io/badge/data-CC%20BY--NC--SA%204.0-9BA3B4)
 
@@ -33,6 +33,8 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 **NL → full dashboard** (`/dashboards`) — describe a dashboard in plain English ("an executive overview", "a delivery dashboard for the North region") and Nexus composes it: it interprets the theme, runs a curated set of questions through the same safe pipeline, applies any detected scope filter to every tile, and pins the results into a bento grid. Generated dashboards render instantly from cached payloads with a live-refresh.
 
 **Proactive Daily Briefing** (`/briefing`) — insight *without being asked*. Nexus analyzes the business on its own: for each key metric it computes the latest complete period, the MoM change, a forecast, and an anomaly flag; ranks what moved most; **root-causes the biggest revenue swing**; and narrates an executive briefing ("Late-delivery rate up 132% in August; revenue down 5%, driven by watches_gifts −23,936"). It's the autonomous-analyst payoff — forecasting + anomaly + monitors + root-cause in one proactive report. Deterministic; a cron can deliver it daily.
+
+**Semantic layer — governed, certified metrics** (`/metrics`) — one governed place to pin what *"revenue"* means. A metric maps a business name **+ synonyms** to a canonical SQL expression on a base table; when a question names a metric (or any synonym), Nexus computes it from the **certified** definition instead of guessing, and the answer carries a *"Certified metric: Merchandise Revenue"* badge so you can trust the number. Reused by every question, dashboard, and monitor — the LookML / dbt-metrics / Cube wedge, minus the setup. Every definition is **safety-verified on write**: the expression is compiled into a probe query, run through the same five-layer guard that gates every user query, and dry-run EXPLAINed — so you can't define a metric that's unsafe, references a column that doesn't exist, or won't execute. The Olist demo ships seeded with 9 certified metrics.
 
 **Decision Intelligence suite:**
 - **Customer Segments** (`/segments`) — real RFM segmentation (quintile scoring on recency/frequency/monetary → Champions, Loyal, At Risk, Hibernating…). Deterministic ML.
@@ -67,7 +69,7 @@ PyPI. See [`packages/sqlguard/README.md`](packages/sqlguard/README.md).
 | **Spider/BIRD** | end-to-end **execution-accuracy** benchmark (the standard text-to-SQL metric) — runs the whole pipeline, safety gate included, per-database; bundled self-contained fixture + a loader for the full Spider/BIRD dev sets. See [`docs/SPIDER_BIRD.md`](docs/SPIDER_BIRD.md) |
 | **Forecast** | **rolling-origin (walk-forward) head-to-head** vs a seasonal-naive reference on daily + monthly grains; RMSE/MAE, zero-masked MAPE, and measured 95% band coverage. Optional PyTorch **LSTM** variant beats Holt-Winters on the ~700-pt daily series (RMSE 9.7k vs 10.2k, ~94% band coverage vs an over-wide 100%). See [`docs/FORECASTING.md`](docs/FORECASTING.md) |
 | **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `139 passed (+4 live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting |
+| **Tests** | `169 passed, 6 skipped (live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting, semantic layer |
 | **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres

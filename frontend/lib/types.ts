@@ -49,6 +49,15 @@ export interface AnalysisResult {
   resolved_question: string | null;
   suggested_followups: string[];
   rootcause: RootCause | null;
+  governed_metric: GovernedMetric | null;
+}
+
+export interface GovernedMetric {
+  id: string;
+  name: string;
+  certified: boolean;
+  matched_phrase: string;
+  expression: string;
 }
 
 export interface RootCauseContributor {

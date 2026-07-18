@@ -223,3 +223,65 @@ export async function getAlerts() {
   const r = await fetch(`${BASE}/alerts`);
   return (await r.json()).alerts as any[];
 }
+
+// --- Semantic layer (governed metrics) ---
+export type Metric = {
+  id: string;
+  connection_id: string;
+  name: string;
+  expression: string;
+  base_table: string;
+  alias: string;
+  synonyms: string[];
+  description: string | null;
+  certified: boolean;
+};
+
+export async function getMetrics(connectionId = "demo") {
+  const r = await fetch(`${BASE}/metrics?connection_id=${connectionId}`);
+  return (await r.json()).metrics as Metric[];
+}
+
+export async function createMetric(
+  body: Partial<Metric> & { name: string; expression: string; base_table: string; alias: string },
+  connectionId = "demo",
+) {
+  const r = await fetch(`${BASE}/metrics?connection_id=${connectionId}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = j.detail;
+    const msg = d?.reasons?.join("; ") || d?.detail || d?.error || "definition rejected";
+    throw new Error(msg);
+  }
+  return j as Metric;
+}
+
+export async function updateMetric(
+  id: string,
+  body: Partial<Metric>,
+  connectionId = "demo",
+) {
+  const r = await fetch(`${BASE}/metrics/${id}?connection_id=${connectionId}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) {
+    const d = j.detail;
+    const msg = d?.reasons?.join("; ") || d?.detail || d?.error || "update rejected";
+    throw new Error(msg);
+  }
+  return j as Metric;
+}
+
+export async function deleteMetric(id: string, connectionId = "demo") {
+  const r = await fetch(`${BASE}/metrics/${id}?connection_id=${connectionId}`, {
+    method: "DELETE",
+  });
+  return await r.json();
+}

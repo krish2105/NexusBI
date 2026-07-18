@@ -45,6 +45,12 @@ CREATE TABLE IF NOT EXISTS glossary (
   id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, term TEXT NOT NULL,
   sql_definition TEXT, description TEXT, created_at DOUBLE PRECISION NOT NULL
 );
+CREATE TABLE IF NOT EXISTS metrics (
+  id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, name TEXT NOT NULL,
+  expression TEXT NOT NULL, base_table TEXT NOT NULL, alias TEXT NOT NULL,
+  synonyms TEXT, description TEXT, certified INTEGER NOT NULL DEFAULT 0,
+  created_at DOUBLE PRECISION NOT NULL, updated_at DOUBLE PRECISION NOT NULL
+);
 CREATE TABLE IF NOT EXISTS conversations (
   id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, title TEXT,
   created_at DOUBLE PRECISION NOT NULL, updated_at DOUBLE PRECISION NOT NULL
@@ -268,6 +274,73 @@ class AppStore:
             rows = con.execute("SELECT * FROM glossary WHERE connection_id=? "
                                "ORDER BY term", (connection_id,)).fetchall()
         return [dict(r) for r in rows]
+
+    # --- semantic layer: governed metrics ---
+    @staticmethod
+    def _metric_row(r) -> dict:
+        d = dict(r)
+        d["synonyms"] = json.loads(d["synonyms"]) if d.get("synonyms") else []
+        d["certified"] = bool(d.get("certified"))
+        return d
+
+    def create_metric(self, connection_id: str, name: str, expression: str,
+                      base_table: str, alias: str, synonyms: list[str] | None = None,
+                      description: str | None = None, certified: bool = False) -> dict:
+        mid = _uid()
+        now = _now()
+        with self._con() as con:
+            con.execute(
+                "INSERT INTO metrics(id,connection_id,name,expression,base_table,"
+                "alias,synonyms,description,certified,created_at,updated_at) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?)",
+                (mid, connection_id, name, expression, base_table, alias,
+                 json.dumps(synonyms or []), description, int(certified), now, now))
+        return self.get_metric(mid)
+
+    def get_metric(self, mid: str) -> dict | None:
+        with self._con() as con:
+            r = con.execute("SELECT * FROM metrics WHERE id=?", (mid,)).fetchone()
+        return self._metric_row(r) if r else None
+
+    def list_metrics(self, connection_id: str) -> list[dict]:
+        with self._con() as con:
+            rows = con.execute(
+                "SELECT * FROM metrics WHERE connection_id=? "
+                "ORDER BY certified DESC, name", (connection_id,)).fetchall()
+        return [self._metric_row(r) for r in rows]
+
+    def count_metrics(self, connection_id: str) -> int:
+        with self._con() as con:
+            r = con.execute("SELECT COUNT(*) FROM metrics WHERE connection_id=?",
+                            (connection_id,)).fetchone()
+        return int(r[0])
+
+    def update_metric(self, mid: str, **fields) -> dict | None:
+        """Patch any subset of {name, expression, base_table, alias, synonyms,
+        description, certified}. ``synonyms`` is JSON-encoded, ``certified`` cast to int."""
+        allowed = {"name", "expression", "base_table", "alias", "synonyms",
+                   "description", "certified"}
+        sets, params = [], []
+        for k, v in fields.items():
+            if k not in allowed or v is None:
+                continue
+            if k == "synonyms":
+                v = json.dumps(v)
+            elif k == "certified":
+                v = int(bool(v))
+            sets.append(f"{k}=?")
+            params.append(v)
+        if not sets:
+            return self.get_metric(mid)
+        sets.append("updated_at=?")
+        params.extend([_now(), mid])
+        with self._con() as con:
+            con.execute(f"UPDATE metrics SET {', '.join(sets)} WHERE id=?", tuple(params))
+        return self.get_metric(mid)
+
+    def delete_metric(self, mid: str) -> None:
+        with self._con() as con:
+            con.execute("DELETE FROM metrics WHERE id=?", (mid,))
 
     # --- conversations (multi-turn threads) ---
     def create_conversation(self, connection_id: str,

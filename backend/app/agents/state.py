@@ -11,6 +11,7 @@ class AnalysisState(TypedDict, total=False):
     question: str
 
     plan: dict
+    governed_metric: Optional[dict]   # certified metric used, if the question named one
     retrieved_schema: list[dict]
     schema_prompt: str
 

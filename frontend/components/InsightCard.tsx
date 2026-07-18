@@ -1,7 +1,7 @@
 "use client";
 import { useState } from "react";
 import { motion } from "motion/react";
-import { AlertTriangle, Lightbulb, TrendingUp, ThumbsUp, ThumbsDown } from "lucide-react";
+import { AlertTriangle, BadgeCheck, Lightbulb, TrendingUp, ThumbsUp, ThumbsDown } from "lucide-react";
 import type { AnalysisResult } from "@/lib/types";
 import { sendFeedback } from "@/lib/api";
 import ConfidenceGauge from "./ConfidenceGauge";
@@ -28,6 +28,16 @@ export default function InsightCard({ result }: { result: AnalysisResult }) {
         </h3>
       </div>
       <p className="text-[15px] leading-relaxed text-ink">{result.narrative}</p>
+
+      {result.governed_metric?.certified && (
+        <div
+          title={`This answer used the certified metric "${result.governed_metric.name}" — ${result.governed_metric.expression}`}
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full border border-pos/30 bg-pos/10 px-2.5 py-1 text-[11px] font-medium text-pos"
+        >
+          <BadgeCheck className="h-3.5 w-3.5" />
+          Certified metric: {result.governed_metric.name}
+        </div>
+      )}
 
       <div className="mt-4 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4">
         <ConfidenceGauge level={result.confidence} />

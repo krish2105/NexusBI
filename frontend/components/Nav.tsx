@@ -9,6 +9,7 @@ const LINKS = [
   { href: "/briefing", label: "Briefing" },
   { href: "/app", label: "Workspace" },
   { href: "/dashboards", label: "Dashboards" },
+  { href: "/metrics", label: "Metrics" },
   { href: "/segments", label: "Segments" },
   { href: "/monitors", label: "Monitors" },
   { href: "/trust", label: "Trust" },

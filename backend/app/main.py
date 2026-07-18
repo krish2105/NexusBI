@@ -8,8 +8,8 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api import (auth, connections, dashboards, insights, misc, monitors,
-                     query, uploads)
+from app.api import (auth, connections, conversations, dashboards, insights,
+                     misc, monitors, query, uploads)
 from app.config import settings
 from app.core.tracing import flush as flush_traces
 from app.core.tracing import is_enabled as tracing_enabled
@@ -64,7 +64,8 @@ async def unhandled(request: Request, exc: Exception):
 
 
 for r in (auth.router, connections.router, uploads.router, query.router,
-          dashboards.router, insights.router, monitors.router, misc.router):
+          conversations.router, dashboards.router, insights.router,
+          monitors.router, misc.router):
     app.include_router(r)
 
 

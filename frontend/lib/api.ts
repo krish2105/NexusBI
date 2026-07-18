@@ -13,11 +13,28 @@ const BASE = process.env.NEXT_PUBLIC_API_URL
   ? process.env.NEXT_PUBLIC_API_URL.replace(/\/$/, "")
   : "/api";
 
-export async function submitQuery(question: string, connectionId = "demo") {
+export async function createConversation(connectionId = "demo", title?: string) {
+  const r = await fetch(`${BASE}/conversations`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ connection_id: connectionId, title }),
+  });
+  return (await r.json()) as { id: string };
+}
+
+export async function submitQuery(
+  question: string,
+  connectionId = "demo",
+  conversationId?: string | null,
+) {
   const r = await fetch(`${BASE}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ question, connection_id: connectionId }),
+    body: JSON.stringify({
+      question,
+      connection_id: connectionId,
+      conversation_id: conversationId ?? null,
+    }),
   });
   if (!r.ok) throw new Error("submit failed");
   return (await r.json()) as { query_id: string; stream_url: string };
@@ -28,8 +45,9 @@ export async function streamQuery(
   question: string,
   onEvent: (ev: AgentEvent) => void,
   connectionId = "demo",
+  conversationId?: string | null,
 ): Promise<AnalysisResult | null> {
-  const { query_id } = await submitQuery(question, connectionId);
+  const { query_id } = await submitQuery(question, connectionId, conversationId);
   const res = await fetch(`${BASE}/query/${query_id}/stream`);
   if (!res.body) throw new Error("no stream body");
 

@@ -6,6 +6,7 @@ import AutoChart from "./AutoChart";
 import SqlBlock from "./SqlBlock";
 import InsightCard from "./InsightCard";
 import KpiCard from "./KpiCard";
+import RootCauseCard from "./RootCauseCard";
 
 export default function ResultCanvas({
   result,
@@ -81,7 +82,9 @@ export default function ResultCanvas({
             </button>
           )}
         </div>
-        {kpi ? (
+        {result.rootcause?.available ? (
+          <RootCauseCard rc={result.rootcause} />
+        ) : kpi ? (
           <KpiCard label={kpiCol} value={Number(result.rows[0]?.[kpiCol] ?? 0)} />
         ) : (
           <AutoChart result={result} />

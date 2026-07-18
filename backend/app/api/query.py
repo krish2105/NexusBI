@@ -21,7 +21,8 @@ def submit_query(req: QueryRequest, user: dict | None = Depends(get_current_user
     authorize_connection(req.connection_id, user)
     store = get_store()
     qid = store.save_query(req.connection_id, req.question, None, None, [], {},
-                           {"status": "pending"})
+                           {"status": "pending"},
+                           conversation_id=req.conversation_id)
     return {"query_id": qid, "stream_url": f"/query/{qid}/stream"}
 
 
@@ -42,7 +43,8 @@ def stream_query(query_id: str):
 
     def gen():
         for ev in run_analysis(question, connection_id=q["connection_id"],
-                               connection_url=url, query_id=query_id, persist=True):
+                               connection_url=url, query_id=query_id, persist=True,
+                               conversation_id=q.get("conversation_id")):
             yield _sse(ev)
         yield "event: done\ndata: {}\n\n"
 
@@ -56,11 +58,13 @@ def run_query_sync(req: QueryRequest, user: dict | None = Depends(get_current_us
     """Synchronous convenience: run the full pipeline and return the final result."""
     authorize_connection(req.connection_id, user)
     store = get_store()
-    qid = store.save_query(req.connection_id, req.question, None, None, [], {}, {})
+    qid = store.save_query(req.connection_id, req.question, None, None, [], {}, {},
+                           conversation_id=req.conversation_id)
     url = resolve_connection_url(req.connection_id)
     final = None
     for ev in run_analysis(req.question, connection_id=req.connection_id,
-                           connection_url=url, query_id=qid, persist=True):
+                           connection_url=url, query_id=qid, persist=True,
+                           conversation_id=req.conversation_id):
         if ev.get("node") == "final":
             final = ev["result"]
     return final or {"error": "no result"}

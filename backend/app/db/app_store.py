@@ -33,10 +33,15 @@ CREATE TABLE IF NOT EXISTS glossary (
   id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, term TEXT NOT NULL,
   sql_definition TEXT, description TEXT, created_at REAL NOT NULL
 );
+CREATE TABLE IF NOT EXISTS conversations (
+  id TEXT PRIMARY KEY, connection_id TEXT NOT NULL, title TEXT,
+  created_at REAL NOT NULL, updated_at REAL NOT NULL
+);
 CREATE TABLE IF NOT EXISTS queries (
   id TEXT PRIMARY KEY, user_id TEXT, connection_id TEXT NOT NULL,
   question TEXT NOT NULL, sql TEXT, confidence TEXT,
-  assumptions TEXT, result_meta TEXT, payload TEXT, created_at REAL NOT NULL
+  assumptions TEXT, result_meta TEXT, payload TEXT, created_at REAL NOT NULL,
+  conversation_id TEXT, turn_index INTEGER, context TEXT
 );
 CREATE TABLE IF NOT EXISTS dashboards (
   id TEXT PRIMARY KEY, user_id TEXT, name TEXT NOT NULL,
@@ -94,6 +99,14 @@ class AppStore:
     def _init_schema(self) -> None:
         with self._con() as con:
             con.executescript(_SCHEMA)
+            # Lightweight migration: add conversation columns to a pre-existing
+            # queries table (older app DBs created before multi-turn support).
+            existing = {r[1] for r in con.execute("PRAGMA table_info(queries)")}
+            for col, decl in (("conversation_id", "TEXT"),
+                              ("turn_index", "INTEGER"),
+                              ("context", "TEXT")):
+                if col not in existing:
+                    con.execute(f"ALTER TABLE queries ADD COLUMN {col} {decl}")
 
     # --- users ---
     def create_user(self, email: str, api_key_hash: str) -> dict:
@@ -160,20 +173,91 @@ class AppStore:
                                "ORDER BY term", (connection_id,)).fetchall()
         return [dict(r) for r in rows]
 
+    # --- conversations (multi-turn threads) ---
+    def create_conversation(self, connection_id: str,
+                            title: str | None = None) -> dict:
+        cid = _uid()
+        with self._con() as con:
+            con.execute("INSERT INTO conversations(id,connection_id,title,"
+                        "created_at,updated_at) VALUES(?,?,?,?,?)",
+                        (cid, connection_id, title, _now(), _now()))
+        return {"id": cid, "connection_id": connection_id, "title": title}
+
+    def get_conversation(self, conversation_id: str) -> dict | None:
+        with self._con() as con:
+            c = con.execute("SELECT * FROM conversations WHERE id=?",
+                            (conversation_id,)).fetchone()
+        if not c:
+            return None
+        out = dict(c)
+        out["turns"] = self.list_turns(conversation_id)
+        return out
+
+    def list_conversations(self, connection_id: str | None = None,
+                          limit: int = 50) -> list[dict]:
+        with self._con() as con:
+            if connection_id:
+                rows = con.execute(
+                    "SELECT * FROM conversations WHERE connection_id=? "
+                    "ORDER BY updated_at DESC LIMIT ?",
+                    (connection_id, limit)).fetchall()
+            else:
+                rows = con.execute("SELECT * FROM conversations "
+                                   "ORDER BY updated_at DESC LIMIT ?",
+                                   (limit,)).fetchall()
+        return [dict(r) for r in rows]
+
+    def list_turns(self, conversation_id: str) -> list[dict]:
+        """Ordered turns in a thread, each with its full result payload."""
+        with self._con() as con:
+            rows = con.execute(
+                "SELECT * FROM queries WHERE conversation_id=? "
+                "ORDER BY turn_index ASC, created_at ASC",
+                (conversation_id,)).fetchall()
+        out = []
+        for r in rows:
+            d = dict(r)
+            for k in ("assumptions", "result_meta", "payload", "context"):
+                d[k] = json.loads(d[k]) if d.get(k) else None
+            out.append(d)
+        return out
+
+    def conversation_context(self, conversation_id: str) -> list[dict]:
+        """Compact per-turn context (question + plan + result summary) used by
+        the follow-up resolver — oldest first."""
+        return [{"question": t["question"], "sql": t.get("sql"),
+                 "context": t.get("context") or {}}
+                for t in self.list_turns(conversation_id)]
+
+    def next_turn_index(self, conversation_id: str) -> int:
+        with self._con() as con:
+            r = con.execute("SELECT COALESCE(MAX(turn_index),-1)+1 FROM queries "
+                            "WHERE conversation_id=?", (conversation_id,)).fetchone()
+        return int(r[0])
+
     # --- queries / history ---
     def save_query(self, connection_id: str, question: str, sql: str | None,
                    confidence: str | None, assumptions: list | None,
                    result_meta: dict | None, payload: dict | None,
-                   user_id: str | None = None, query_id: str | None = None) -> str:
+                   user_id: str | None = None, query_id: str | None = None,
+                   conversation_id: str | None = None,
+                   turn_index: int | None = None,
+                   context: dict | None = None) -> str:
         qid = query_id or _uid()
         with self._con() as con:
             con.execute(
                 "INSERT OR REPLACE INTO queries(id,user_id,connection_id,question,"
-                "sql,confidence,assumptions,result_meta,payload,created_at) "
-                "VALUES(?,?,?,?,?,?,?,?,?,?)",
+                "sql,confidence,assumptions,result_meta,payload,created_at,"
+                "conversation_id,turn_index,context) "
+                "VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)",
                 (qid, user_id, connection_id, question, sql, confidence,
                  json.dumps(assumptions or []), json.dumps(result_meta or {}),
-                 json.dumps(payload or {}), _now()))
+                 json.dumps(payload or {}), _now(),
+                 conversation_id, turn_index,
+                 json.dumps(context) if context is not None else None))
+            if conversation_id:
+                con.execute("UPDATE conversations SET updated_at=? WHERE id=?",
+                            (_now(), conversation_id))
         return qid
 
     def get_query(self, qid: str) -> dict | None:

@@ -14,9 +14,13 @@ const EXAMPLES = [
 export default function QueryBar({
   onSubmit,
   busy,
+  placeholder = "Ask your data anything…",
+  showExamples = true,
 }: {
   onSubmit: (q: string) => void;
   busy: boolean;
+  placeholder?: string;
+  showExamples?: boolean;
 }) {
   const [value, setValue] = useState("");
   const btnRef = useRef<HTMLButtonElement>(null);
@@ -25,6 +29,7 @@ export default function QueryBar({
   const submit = () => {
     if (!value.trim() || busy) return;
     onSubmit(value.trim());
+    setValue("");
   };
 
   const onMove = (e: React.MouseEvent) => {
@@ -41,7 +46,7 @@ export default function QueryBar({
           value={value}
           onChange={(e) => setValue(e.target.value)}
           onKeyDown={(e) => e.key === "Enter" && submit()}
-          placeholder="Ask your data anything…"
+          placeholder={placeholder}
           className="focus-ring w-full bg-transparent px-1 py-2.5 text-[15px] text-ink placeholder:text-ink-faint focus:outline-none"
           aria-label="Ask a business question"
         />
@@ -59,7 +64,7 @@ export default function QueryBar({
           <ArrowUp className="h-5 w-5" />
         </motion.button>
       </div>
-      <div className="mt-3 flex flex-wrap gap-2">
+      <div className={`mt-3 flex-wrap gap-2 ${showExamples ? "flex" : "hidden"}`}>
         {EXAMPLES.map((ex, i) => (
           <motion.button
             key={ex}

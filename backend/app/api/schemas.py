@@ -41,6 +41,12 @@ class GlossaryRequest(BaseModel):
 class QueryRequest(BaseModel):
     question: str
     connection_id: str = "demo"
+    conversation_id: str | None = None   # set to run within a multi-turn thread
+
+
+class ConversationRequest(BaseModel):
+    connection_id: str = "demo"
+    title: str | None = None
 
 
 class DashboardRequest(BaseModel):

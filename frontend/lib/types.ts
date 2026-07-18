@@ -45,6 +45,31 @@ export interface AnalysisResult {
   validation_errors: string[];
   error: string | null;
   trace_url: string | null;
+  conversation_id: string | null;
+  resolved_question: string | null;
+  suggested_followups: string[];
+  rootcause: RootCause | null;
+}
+
+export interface RootCauseContributor {
+  member: string;
+  from: number;
+  to: number;
+  delta: number;
+  contribution_pct: number | null;
+}
+
+export interface RootCause {
+  available: boolean;
+  decomposition_dimension: string;
+  period_from: string;
+  period_to: string;
+  total_from: number;
+  total_to: number;
+  total_change: number;
+  pct_change: number;
+  contributors: RootCauseContributor[];
+  narrative: string;
 }
 
 export interface AgentEvent {
@@ -55,11 +80,13 @@ export interface AgentEvent {
 }
 
 export const PIPELINE_STEPS = [
+  { node: "context_resolver", label: "Understanding context" },
   { node: "planner", label: "Planning" },
   { node: "schema_retriever", label: "Retrieving schema" },
   { node: "sql_generator", label: "Writing SQL" },
   { node: "sql_validator", label: "Validating" },
   { node: "executor", label: "Running" },
+  { node: "rootcause", label: "Root-cause" },
   { node: "forecaster", label: "Forecasting" },
   { node: "narrator", label: "Narrating" },
 ] as const;

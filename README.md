@@ -8,7 +8,7 @@ Agentic Decision Intelligence · five-layer text-to-SQL safety · hybrid-RAG sch
 
 [![CI](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml/badge.svg)](https://github.com/krish2105/NexusBI/actions/workflows/ci.yml)
 ![safety](https://img.shields.io/badge/adversarial%20queries%20blocked-100%25-34D399)
-![tests](https://img.shields.io/badge/backend%20tests-85%20passing-6366F1)
+![tests](https://img.shields.io/badge/backend%20tests-91%20passing-6366F1)
 ![free tier](https://img.shields.io/badge/API%20keys-0%20required-22D3EE)
 ![license](https://img.shields.io/badge/data-CC%20BY--NC--SA%204.0-9BA3B4)
 
@@ -26,6 +26,8 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 
 **Bring your own data:** upload a CSV in the workspace and Nexus builds an instant read-only warehouse you can question with the same five-layer safety guard — and a **schema-agnostic zero-key synthesizer** grounds SQL against *any* table (no LLM key needed).
 
+**Conversational multi-turn analysis:** the workspace is a thread, not one-shot Q&A. Ask a question, then follow up in plain English — *"now just the North region"*, *"break it down by state"*, *"top 3"*, *"why did it change?"*. Nexus carries the prior analysis forward and applies the delta (scope / pivot / metric / time), and **"why?" runs a real contribution/root-cause decomposition** attributing a period-over-period change to specific members ("watches_gifts drove 45% of the dip"). Deterministic and grounded — the follow-up resolver reuses the exact same safety-checked pipeline.
+
 **Decision Intelligence suite:**
 - **Customer Segments** (`/segments`) — real RFM segmentation (quintile scoring on recency/frequency/monetary → Champions, Loyal, At Risk, Hibernating…). Deterministic ML.
 - **Monitors & Alerts** (`/monitors`) — save a question to watch; a robust median+MAD check raises an alert when the latest period deviates from its baseline. Schedule via cron hitting `POST /monitors/run-all`.
@@ -40,7 +42,7 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 | **Text-to-SQL** | 100% data-integrity; ~49% zero-key generator execution accuracy (higher with a Groq key) |
 | **Forecast** | Holt-Winters backtest, MAPE on a 3-month holdout |
 | **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `85 passed` — safety rules, read-only enforcement, graph, API, hardening |
+| **Tests** | `91 passed` — safety rules, read-only enforcement, graph, API, hardening |
 | **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres

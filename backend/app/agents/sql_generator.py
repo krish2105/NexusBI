@@ -26,6 +26,7 @@ _EDGES: dict[frozenset[str], str] = {
     frozenset({"products", "categories"}): "products.category_id = categories.category_id",
     frozenset({"orders", "regions"}): "orders.region_id = regions.region_id",
     frozenset({"orders", "customers"}): "orders.customer_id = customers.customer_id",
+    frozenset({"orders", "dates"}): "orders.order_date_id = dates.date_id",
     frozenset({"payments", "orders"}): "payments.order_id = orders.order_id",
     frozenset({"reviews", "orders"}): "reviews.order_id = orders.order_id",
 }
@@ -107,6 +108,30 @@ def _plan_joins(required: set[str], root: str) -> tuple[str, list[str], list[str
 
 def _default_limit(top_n: int | None) -> int:
     return top_n or 10_000
+
+
+def _filter_tables(filters: list[dict]) -> set[str]:
+    """Tables a WHERE clause references, so join planning includes them.
+    A filter defaults to `orders` when it doesn't declare a table."""
+    return {f.get("table", "orders") for f in (filters or [])}
+
+
+def synthesize_decomposition(metric: dict, decomp: dict,
+                             filters: list[dict] | None = None) -> str:
+    """A metric per (month, dimension-member) query, for root-cause analysis:
+    it lets us attribute a period-over-period change to specific members."""
+    filters = filters or []
+    required = ({metric["base"], "orders", "dates", decomp["table"]}
+                | _filter_tables(filters))
+    root = "order_items" if "order_items" in required else metric["base"]
+    root, joins, _ = _plan_joins(required, root)
+    where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""
+    join_block = ("\n" + "\n".join(joins)) if joins else ""
+    return (f"SELECT dates.year_month AS period, {decomp['col']} AS member, "
+            f"{metric['expr']} AS val\n"
+            f"FROM {root}{join_block}{where}\n"
+            f"GROUP BY dates.year_month, {decomp['col']}\n"
+            f"ORDER BY dates.year_month\nLIMIT 10000")
 
 
 # --- generic (schema-agnostic) synthesizer for uploaded / arbitrary data -----
@@ -254,24 +279,35 @@ def synthesize_sql(question: str, plan: dict,
     # --- time series (monthly) ---
     if shape == "timeseries":
         col = _KPI_COL.get(alias)
-        if col:
+        # The pre-aggregated monthly_kpis view has no dimensions, so it can only
+        # answer an UNFILTERED monthly series. With a scope filter, group by the
+        # real date dimension so the filter actually applies.
+        if col and not filters:
             assumptions.append("Monthly grain resolved from the pre-aggregated "
                                "monthly_kpis view (2016-09 .. 2018-10).")
             sql = (f"SELECT year_month, {col} AS {alias}\n"
                    f"FROM monthly_kpis\nORDER BY year_month\nLIMIT 10000")
             return sql, f"Monthly {alias} time series from monthly_kpis.", assumptions
-        # generic monthly grouping via dates
-        shape = "groupby"
-        dimension = {"table": "dates", "col": "dates.year_month", "label": "year_month"}
+        # Group by the real date dimension (orders -> dates).
+        required = {metric["base"], "orders", "dates"} | _filter_tables(filters)
+        root = "order_items" if "order_items" in required else metric["base"]
+        root, joins, _ = _plan_joins(required, root)
+        where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""
+        join_block = ("\n" + "\n".join(joins)) if joins else ""
+        sql = (f"SELECT dates.year_month AS year_month, {metric['expr']} AS {alias}\n"
+               f"FROM {root}{join_block}{where}\n"
+               f"GROUP BY dates.year_month\nORDER BY dates.year_month\nLIMIT 10000")
+        expl = (f"Monthly {alias}"
+                + (" for " + " & ".join(f['label'] for f in filters) if filters else "")
+                + " (grouped by purchase month).")
+        return sql, expl, assumptions
 
     # --- group-by dimension ---
     if shape == "groupby":
         if dimension is None:
             dimension = {"table": "categories", "col": "categories.category_name_en",
                          "label": "category_name_en"}
-        required = {metric["base"], dimension["table"]}
-        if filters:
-            required.add("orders")
+        required = {metric["base"], dimension["table"]} | _filter_tables(filters)
         root = "order_items" if "order_items" in required else metric["base"]
         root, joins, unresolved = _plan_joins(required, root)
         where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""
@@ -289,9 +325,7 @@ def synthesize_sql(question: str, plan: dict,
         return sql, expl, assumptions
 
     # --- scalar ---
-    required = {metric["base"]}
-    if filters:
-        required.add("orders")
+    required = {metric["base"]} | _filter_tables(filters)
     root = "order_items" if "order_items" in required else metric["base"]
     root, joins, _ = _plan_joins(required, root)
     where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""

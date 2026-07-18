@@ -45,7 +45,8 @@ def run_analysis(question: str, connection_id: str = "demo",
                  query_id: str | None = None,
                  persist: bool = True,
                  conversation_id: str | None = None,
-                 history: list[dict] | None = None) -> Iterator[dict]:
+                 history: list[dict] | None = None,
+                 seed_plan: dict | None = None) -> Iterator[dict]:
     """Run the pipeline, yielding events. The final event carries the full result.
 
     When ``conversation_id`` is set, prior turns in the thread are loaded and the
@@ -134,7 +135,9 @@ def run_analysis(question: str, connection_id: str = "demo",
 
     # --- planner ---
     yield emit(_event("planner", "running", label="Planning analysis"))
-    if resolution and resolution.mode == "refine" and resolution.seed_plan:
+    if seed_plan is not None:
+        plan = seed_plan              # caller-supplied plan (e.g. a dashboard tile)
+    elif resolution and resolution.mode == "refine" and resolution.seed_plan:
         plan = resolution.seed_plan   # carried forward from the prior turn + delta
     else:
         plan = plan_question(question)

@@ -134,6 +134,16 @@ export async function createDashboard(name: string) {
   return await r.json();
 }
 
+export async function generateDashboard(description: string, connectionId = "demo") {
+  const r = await fetch(`${BASE}/dashboards/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ description, connection_id: connectionId }),
+  });
+  if (!r.ok) throw new Error("generation failed");
+  return await r.json();
+}
+
 export async function pinToDashboard(dashboardId: string, queryId: string) {
   const r = await fetch(`${BASE}/dashboards/${dashboardId}/pin`, {
     method: "POST",

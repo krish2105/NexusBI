@@ -53,6 +53,11 @@ class DashboardRequest(BaseModel):
     name: str
 
 
+class DashboardGenerateRequest(BaseModel):
+    description: str
+    connection_id: str = "demo"
+
+
 class PinRequest(BaseModel):
     query_id: str
     position: dict[str, Any] | None = None

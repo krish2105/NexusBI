@@ -57,6 +57,8 @@ class Settings(BaseSettings):
         "app_db_url", "demo_target_url", "jwt_secret", "encryption_key",
         "monitor_run_token", "groq_api_key", "ollama_base_url",
         "langfuse_public_key", "langfuse_secret_key", "langfuse_host",
+        "redis_url", "sentry_dsn", "stripe_secret_key", "stripe_publishable_key",
+        "stripe_webhook_secret", "stripe_price_pro", "app_base_url",
         mode="before",
     )
     @classmethod
@@ -138,9 +140,43 @@ class Settings(BaseSettings):
     langfuse_secret_key: str | None = None
     langfuse_host: str = "https://cloud.langfuse.com"
 
+    # === Phase 3: first paying customer (every service has a free tier; all
+    # of these degrade gracefully to a $0 local default when unset) ===
+
+    # Public base URL of the app (used for Stripe success/cancel redirects).
+    app_base_url: str = "http://localhost:3000"
+
+    # --- Redis (Upstash free tier). Unset -> in-process rate limiter + cache. ---
+    redis_url: str | None = None
+
+    # --- Error tracking (Sentry free tier). Unset -> no-op. ---
+    sentry_dsn: str | None = None
+    sentry_traces_sample_rate: float = 0.0
+
+    # --- Proxy awareness: how many trusted proxies sit in front of us, so the
+    # rate limiter reads the real client IP from X-Forwarded-For instead of the
+    # proxy's. Render+Vercel = 1. 0 disables XFF trust (dev / direct). ---
+    trusted_proxy_count: int = 0
+
+    # --- Billing (Stripe). Unset -> everyone stays on the Free plan, all
+    # features work, no checkout surface. Test-mode keys are free. ---
+    stripe_secret_key: str | None = None
+    stripe_publishable_key: str | None = None
+    stripe_webhook_secret: str | None = None
+    stripe_price_pro: str | None = None        # the Pro plan's Stripe price id
+
+    # --- Free-tier usage caps (enforced for users on the Free plan; Pro is
+    # uncapped / BYO-LLM-key). The open demo connection is never metered. ---
+    free_tier_daily_queries: int = 50
+    free_tier_max_connections: int = 2
+
     @property
     def data_dir(self) -> Path:
         return DATA_DIR
+
+    @property
+    def billing_enabled(self) -> bool:
+        return bool(self.stripe_secret_key and self.stripe_price_pro)
 
 
 @lru_cache

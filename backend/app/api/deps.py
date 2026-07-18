@@ -6,7 +6,7 @@ from fastapi import Header, HTTPException, Request
 from app.config import settings
 from app.core.crypto import decrypt
 from app.core.ratelimit import limiter
-from app.core.security import decode_jwt, verify_secret
+from app.core.security import api_key_id, decode_jwt, verify_secret
 from app.db.app_store import AppStore, get_store
 
 DEMO_CONNECTION_ID = "demo"
@@ -24,9 +24,17 @@ def get_current_user(authorization: str | None = Header(None),
         if payload:
             return {"id": payload["sub"], "email": payload.get("email")}
     if x_api_key:
-        for u in get_store().list_users():
-            if verify_secret(x_api_key, u["api_key_hash"]):
-                return {"id": u["id"], "email": u["email"]}
+        store = get_store()
+        # O(1): map the key to its indexed id, then a single hash verify.
+        u = store.get_user_by_api_key_id(api_key_id(x_api_key))
+        if u and verify_secret(x_api_key, u["api_key_hash"]):
+            return {"id": u["id"], "email": u["email"]}
+        # Fallback for legacy keys issued before api_key_id existed (no index).
+        if u is None:
+            for cand in store.list_users():
+                if not cand.get("api_key_id") and \
+                        verify_secret(x_api_key, cand["api_key_hash"]):
+                    return {"id": cand["id"], "email": cand["email"]}
     return None
 
 

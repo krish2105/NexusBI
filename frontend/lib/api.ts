@@ -1,4 +1,10 @@
 import type { AgentEvent, AnalysisResult } from "./types";
+import { authHeader } from "./authToken";
+
+/** fetch that attaches the bearer token (if logged in) to every request. */
+function authFetch(url: string, init: RequestInit = {}) {
+  return fetch(url, { ...init, headers: { ...(init.headers || {}), ...authHeader() } });
+}
 
 // Local dev: same-origin "/api/*" proxied to the backend via next.config.mjs
 // rewrites (no CORS needed, works out of the box with `npm run dev`).
@@ -14,7 +20,7 @@ const BASE = process.env.NEXT_PUBLIC_API_URL
   : "/api";
 
 export async function createConversation(connectionId = "demo", title?: string) {
-  const r = await fetch(`${BASE}/conversations`, {
+  const r = await authFetch(`${BASE}/conversations`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ connection_id: connectionId, title }),
@@ -27,7 +33,7 @@ export async function submitQuery(
   connectionId = "demo",
   conversationId?: string | null,
 ) {
-  const r = await fetch(`${BASE}/query`, {
+  const r = await authFetch(`${BASE}/query`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
@@ -48,7 +54,7 @@ export async function streamQuery(
   conversationId?: string | null,
 ): Promise<AnalysisResult | null> {
   const { query_id } = await submitQuery(question, connectionId, conversationId);
-  const res = await fetch(`${BASE}/query/${query_id}/stream`);
+  const res = await authFetch(`${BASE}/query/${query_id}/stream`);
   if (!res.body) throw new Error("no stream body");
 
   const reader = res.body.getReader();
@@ -80,7 +86,7 @@ export async function streamQuery(
 }
 
 export async function runQuerySync(question: string, connectionId = "demo") {
-  const r = await fetch(`${BASE}/query/run`, {
+  const r = await authFetch(`${BASE}/query/run`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ question, connection_id: connectionId }),
@@ -89,27 +95,27 @@ export async function runQuerySync(question: string, connectionId = "demo") {
 }
 
 export async function getSchema(connectionId = "demo") {
-  const r = await fetch(`${BASE}/connections/${connectionId}/schema`);
+  const r = await authFetch(`${BASE}/connections/${connectionId}/schema`);
   return await r.json();
 }
 
 export async function getHistory() {
-  const r = await fetch(`${BASE}/history`);
+  const r = await authFetch(`${BASE}/history`);
   return (await r.json()).queries as any[];
 }
 
 export async function getAudit() {
-  const r = await fetch(`${BASE}/audit`);
+  const r = await authFetch(`${BASE}/audit`);
   return (await r.json()).audit as any[];
 }
 
 export async function getConnections() {
-  const r = await fetch(`${BASE}/connections`);
+  const r = await authFetch(`${BASE}/connections`);
   return (await r.json()).connections as any[];
 }
 
 export async function connectDatabase(name: string, targetUrl: string) {
-  const r = await fetch(`${BASE}/connections`, {
+  const r = await authFetch(`${BASE}/connections`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, target_url: targetUrl, read_only_confirmed: true }),
@@ -123,7 +129,7 @@ export async function uploadCsv(files: FileList | File[], name: string) {
   const fd = new FormData();
   Array.from(files).forEach((f) => fd.append("files", f));
   fd.append("name", name);
-  const r = await fetch(`${BASE}/connections/upload`, { method: "POST", body: fd });
+  const r = await authFetch(`${BASE}/connections/upload`, { method: "POST", body: fd });
   if (!r.ok) {
     const err = await r.json().catch(() => ({}));
     throw new Error(err.detail || "upload failed");
@@ -132,18 +138,18 @@ export async function uploadCsv(files: FileList | File[], name: string) {
 }
 
 export async function getEvals() {
-  const r = await fetch(`${BASE}/evals`);
+  const r = await authFetch(`${BASE}/evals`);
   return await r.json();
 }
 
 export async function getDashboards() {
-  const r = await fetch(`${BASE}/dashboards`);
+  const r = await authFetch(`${BASE}/dashboards`);
   if (!r.ok) throw new Error("failed to load dashboards");
   return (await r.json()).dashboards as any[];
 }
 
 export async function createDashboard(name: string) {
-  const r = await fetch(`${BASE}/dashboards`, {
+  const r = await authFetch(`${BASE}/dashboards`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name }),
@@ -152,7 +158,7 @@ export async function createDashboard(name: string) {
 }
 
 export async function generateDashboard(description: string, connectionId = "demo") {
-  const r = await fetch(`${BASE}/dashboards/generate`, {
+  const r = await authFetch(`${BASE}/dashboards/generate`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ description, connection_id: connectionId }),
@@ -162,7 +168,7 @@ export async function generateDashboard(description: string, connectionId = "dem
 }
 
 export async function pinToDashboard(dashboardId: string, queryId: string) {
-  const r = await fetch(`${BASE}/dashboards/${dashboardId}/pin`, {
+  const r = await authFetch(`${BASE}/dashboards/${dashboardId}/pin`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ query_id: queryId }),
@@ -172,7 +178,7 @@ export async function pinToDashboard(dashboardId: string, queryId: string) {
 
 // --- Decision Intelligence suite ---
 export async function sendFeedback(queryId: string, rating: "up" | "down", note?: string) {
-  const r = await fetch(`${BASE}/query/${queryId}/feedback`, {
+  const r = await authFetch(`${BASE}/query/${queryId}/feedback`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ rating, note }),
@@ -181,27 +187,27 @@ export async function sendFeedback(queryId: string, rating: "up" | "down", note?
 }
 
 export async function getSegments(connectionId = "demo") {
-  const r = await fetch(`${BASE}/insights/segments?connection_id=${connectionId}`);
+  const r = await authFetch(`${BASE}/insights/segments?connection_id=${connectionId}`);
   return await r.json();
 }
 
 export async function getTrust() {
-  const r = await fetch(`${BASE}/trust/summary`);
+  const r = await authFetch(`${BASE}/trust/summary`);
   return await r.json();
 }
 
 export async function getBriefing(connectionId = "demo") {
-  const r = await fetch(`${BASE}/briefing?connection_id=${connectionId}`);
+  const r = await authFetch(`${BASE}/briefing?connection_id=${connectionId}`);
   return await r.json();
 }
 
 export async function getMonitors() {
-  const r = await fetch(`${BASE}/monitors`);
+  const r = await authFetch(`${BASE}/monitors`);
   return (await r.json()).monitors as any[];
 }
 
 export async function createMonitor(name: string, question: string, connectionId = "demo") {
-  const r = await fetch(`${BASE}/monitors`, {
+  const r = await authFetch(`${BASE}/monitors`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ name, question, connection_id: connectionId }),
@@ -210,17 +216,17 @@ export async function createMonitor(name: string, question: string, connectionId
 }
 
 export async function runMonitor(id: string) {
-  const r = await fetch(`${BASE}/monitors/${id}/run`, { method: "POST" });
+  const r = await authFetch(`${BASE}/monitors/${id}/run`, { method: "POST" });
   return await r.json();
 }
 
 export async function runAllMonitors() {
-  const r = await fetch(`${BASE}/monitors/run-all`, { method: "POST" });
+  const r = await authFetch(`${BASE}/monitors/run-all`, { method: "POST" });
   return await r.json();
 }
 
 export async function getAlerts() {
-  const r = await fetch(`${BASE}/alerts`);
+  const r = await authFetch(`${BASE}/alerts`);
   return (await r.json()).alerts as any[];
 }
 
@@ -238,7 +244,7 @@ export type Metric = {
 };
 
 export async function getMetrics(connectionId = "demo") {
-  const r = await fetch(`${BASE}/metrics?connection_id=${connectionId}`);
+  const r = await authFetch(`${BASE}/metrics?connection_id=${connectionId}`);
   return (await r.json()).metrics as Metric[];
 }
 
@@ -246,7 +252,7 @@ export async function createMetric(
   body: Partial<Metric> & { name: string; expression: string; base_table: string; alias: string },
   connectionId = "demo",
 ) {
-  const r = await fetch(`${BASE}/metrics?connection_id=${connectionId}`, {
+  const r = await authFetch(`${BASE}/metrics?connection_id=${connectionId}`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -265,7 +271,7 @@ export async function updateMetric(
   body: Partial<Metric>,
   connectionId = "demo",
 ) {
-  const r = await fetch(`${BASE}/metrics/${id}?connection_id=${connectionId}`, {
+  const r = await authFetch(`${BASE}/metrics/${id}?connection_id=${connectionId}`, {
     method: "PATCH",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(body),
@@ -280,8 +286,69 @@ export async function updateMetric(
 }
 
 export async function deleteMetric(id: string, connectionId = "demo") {
-  const r = await fetch(`${BASE}/metrics/${id}?connection_id=${connectionId}`, {
+  const r = await authFetch(`${BASE}/metrics/${id}?connection_id=${connectionId}`, {
     method: "DELETE",
   });
   return await r.json();
+}
+
+// --- Auth (email + password) ---
+export type AuthUser = { id: string; email: string; plan: string };
+export type AuthResponse = { access_token: string; user: AuthUser; api_key?: string };
+
+async function authCall(path: string, body: object): Promise<AuthResponse> {
+  const r = await authFetch(`${BASE}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.detail || "authentication failed");
+  return j as AuthResponse;
+}
+
+export const signup = (email: string, password: string) =>
+  authCall("/auth/signup", { email, password });
+export const loginApi = (email: string, password: string) =>
+  authCall("/auth/login", { email, password });
+
+export async function getMe(): Promise<AuthUser | null> {
+  const r = await authFetch(`${BASE}/auth/me`);
+  if (!r.ok) return null;
+  return (await r.json()) as AuthUser;
+}
+
+// --- Account + billing ---
+export async function getAccount() {
+  const r = await authFetch(`${BASE}/account`);
+  if (!r.ok) throw new Error("failed to load account");
+  return await r.json();
+}
+
+export async function setByoKey(provider: string, key: string) {
+  const r = await authFetch(`${BASE}/account/llm-key`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ provider, key }),
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.detail || "failed to save key");
+  return j;
+}
+
+export async function clearByoKey() {
+  const r = await authFetch(`${BASE}/account/llm-key`, { method: "DELETE" });
+  return await r.json();
+}
+
+export async function startCheckout(): Promise<{ url?: string; enabled?: boolean }> {
+  const r = await authFetch(`${BASE}/billing/checkout`, { method: "POST" });
+  const j = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(j.detail || "checkout unavailable");
+  return j;
+}
+
+export async function openBillingPortal(): Promise<{ url?: string }> {
+  const r = await authFetch(`${BASE}/billing/portal`, { method: "POST" });
+  return await r.json().catch(() => ({}));
 }

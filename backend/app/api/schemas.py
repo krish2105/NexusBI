@@ -26,6 +26,29 @@ class TokenResponse(BaseModel):
     token_type: str = "bearer"
 
 
+class SignupRequest(BaseModel):
+    email: str = Field(min_length=3, max_length=254)
+    password: str = Field(min_length=8, max_length=200)
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class UserPublic(BaseModel):
+    id: str
+    email: str
+    plan: str = "free"
+
+
+class AuthResponse(BaseModel):
+    access_token: str
+    token_type: str = "bearer"
+    user: UserPublic
+    api_key: str | None = None      # returned once, on signup only
+
+
 class ConnectionRequest(BaseModel):
     name: str = "Demo — Olist e-commerce"
     target_url: str | None = None      # None -> bundled read-only demo

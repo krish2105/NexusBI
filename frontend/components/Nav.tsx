@@ -4,6 +4,7 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { Menu, Sparkles, X } from "lucide-react";
+import AuthNav from "./AuthNav";
 import ThemeToggle from "./ThemeToggle";
 
 const LINKS = [
@@ -76,6 +77,7 @@ export default function Nav() {
 
         <div className="flex items-center gap-2">
           <ThemeToggle />
+          <AuthNav />
           <Link
             href="/app"
             className="focus-ring hidden rounded-lg bg-ai-gradient px-4 py-1.5 text-sm font-medium text-white shadow-glow sm:block"

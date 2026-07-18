@@ -34,7 +34,9 @@ from app.config import settings
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY, email TEXT UNIQUE NOT NULL,
-  api_key_hash TEXT NOT NULL, created_at DOUBLE PRECISION NOT NULL
+  api_key_hash TEXT NOT NULL, created_at DOUBLE PRECISION NOT NULL,
+  password_hash TEXT, api_key_id TEXT, plan TEXT NOT NULL DEFAULT 'free',
+  stripe_customer_id TEXT, byo_llm_key_enc TEXT
 );
 CREATE TABLE IF NOT EXISTS connections (
   id TEXT PRIMARY KEY, user_id TEXT NOT NULL, name TEXT NOT NULL,
@@ -209,20 +211,82 @@ class AppStore:
                               ("context", "TEXT")):
                 if col not in existing:
                     con.execute(f"ALTER TABLE queries ADD COLUMN {col} {decl}")
+            # Phase 3: auth/billing columns on a pre-existing users table.
+            ucols = self._existing_columns(con, "users")
+            for col, decl in (("password_hash", "TEXT"),
+                              ("api_key_id", "TEXT"),
+                              ("plan", "TEXT NOT NULL DEFAULT 'free'"),
+                              ("stripe_customer_id", "TEXT"),
+                              ("byo_llm_key_enc", "TEXT")):
+                if col not in ucols:
+                    con.execute(f"ALTER TABLE users ADD COLUMN {col} {decl}")
+            # Index AFTER the migration so it never references a not-yet-added
+            # column on a pre-existing users table.
+            con.execute("CREATE INDEX IF NOT EXISTS ix_users_api_key_id "
+                        "ON users(api_key_id)")
 
     # --- users ---
-    def create_user(self, email: str, api_key_hash: str) -> dict:
+    def create_user(self, email: str, api_key_hash: str,
+                    password_hash: str | None = None,
+                    api_key_id: str | None = None, plan: str = "free") -> dict:
         uid = _uid()
         with self._con() as con:
             con.execute(
-                "INSERT INTO users(id,email,api_key_hash,created_at) VALUES(?,?,?,?)",
-                (uid, email, api_key_hash, _now()))
-        return {"id": uid, "email": email}
+                "INSERT INTO users(id,email,api_key_hash,created_at,password_hash,"
+                "api_key_id,plan) VALUES(?,?,?,?,?,?,?)",
+                (uid, email, api_key_hash, _now(), password_hash, api_key_id, plan))
+        return self.get_user(uid)
+
+    def get_user(self, uid: str) -> dict | None:
+        with self._con() as con:
+            r = con.execute("SELECT * FROM users WHERE id=?", (uid,)).fetchone()
+        return dict(r) if r else None
 
     def get_user_by_email(self, email: str) -> dict | None:
         with self._con() as con:
             r = con.execute("SELECT * FROM users WHERE email=?", (email,)).fetchone()
         return dict(r) if r else None
+
+    def get_user_by_api_key_id(self, api_key_id: str) -> dict | None:
+        """Indexed lookup so API-key auth is O(1) + a single hash verify, not an
+        O(n) PBKDF2 scan over every user (the assessment's auth finding)."""
+        with self._con() as con:
+            r = con.execute("SELECT * FROM users WHERE api_key_id=?",
+                            (api_key_id,)).fetchone()
+        return dict(r) if r else None
+
+    def set_password(self, uid: str, password_hash: str) -> None:
+        with self._con() as con:
+            con.execute("UPDATE users SET password_hash=? WHERE id=?",
+                        (password_hash, uid))
+
+    def set_plan(self, uid: str, plan: str,
+                 stripe_customer_id: str | None = None) -> None:
+        with self._con() as con:
+            if stripe_customer_id is not None:
+                con.execute("UPDATE users SET plan=?, stripe_customer_id=? WHERE id=?",
+                            (plan, stripe_customer_id, uid))
+            else:
+                con.execute("UPDATE users SET plan=? WHERE id=?", (plan, uid))
+
+    def get_user_by_stripe_customer(self, customer_id: str) -> dict | None:
+        with self._con() as con:
+            r = con.execute("SELECT * FROM users WHERE stripe_customer_id=?",
+                            (customer_id,)).fetchone()
+        return dict(r) if r else None
+
+    def set_byo_llm_key(self, uid: str, key_enc: str | None) -> None:
+        with self._con() as con:
+            con.execute("UPDATE users SET byo_llm_key_enc=? WHERE id=?",
+                        (key_enc, uid))
+
+    def count_user_queries_since(self, uid: str, since_epoch: float) -> int:
+        """Executed queries by a user since a timestamp — powers Free-tier metering."""
+        with self._con() as con:
+            r = con.execute(
+                "SELECT COUNT(*) FROM queries WHERE user_id=? AND created_at>=?",
+                (uid, since_epoch)).fetchone()
+        return int(r[0])
 
     def list_users(self) -> list[dict]:
         with self._con() as con:

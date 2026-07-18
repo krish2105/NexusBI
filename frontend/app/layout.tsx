@@ -4,6 +4,7 @@ import "./globals.css";
 import SmoothScroll from "@/components/SmoothScroll";
 import Nav from "@/components/Nav";
 import { ThemeProvider } from "@/components/ThemeProvider";
+import { AuthProvider } from "@/components/AuthProvider";
 
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const mono = JetBrains_Mono({
@@ -41,10 +42,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen bg-base text-ink antialiased">
         <ThemeProvider>
-          <SmoothScroll>
-            <Nav />
-            {children}
-          </SmoothScroll>
+          <AuthProvider>
+            <SmoothScroll>
+              <Nav />
+              {children}
+            </SmoothScroll>
+          </AuthProvider>
         </ThemeProvider>
       </body>
     </html>

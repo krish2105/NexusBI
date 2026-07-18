@@ -23,6 +23,14 @@ def new_api_key() -> str:
     return "nxs_" + secrets.token_urlsafe(32)
 
 
+def api_key_id(key: str) -> str:
+    """A non-secret, deterministic index derived from an API key, so a presented
+    key maps to exactly one user via an indexed column — turning O(n)-PBKDF2-scan
+    auth into O(1) lookup + a single verify. Not reversible to the key, and
+    knowing it grants nothing (auth still requires the key itself)."""
+    return "kid_" + hashlib.sha256(key.encode()).hexdigest()[:24]
+
+
 def hash_secret(secret: str, salt: str | None = None) -> str:
     salt = salt or secrets.token_hex(16)
     dk = hashlib.pbkdf2_hmac("sha256", secret.encode(), salt.encode(), _PBKDF_ITERS)

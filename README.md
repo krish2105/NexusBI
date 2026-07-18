@@ -24,7 +24,7 @@ Connect a database, ask a question in plain English, and a multi-agent pipeline 
 
 Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,441 orders, 112,650 items, 96,096 shoppers (2016–2018).
 
-**Bring your own data:** upload a CSV in the workspace and Nexus builds an instant read-only warehouse you can question with the same five-layer safety guard — and a **schema-agnostic zero-key synthesizer** grounds SQL against *any* table (no LLM key needed).
+**Bring your own data:** upload a CSV in the workspace and Nexus builds an instant read-only warehouse you can question with the same five-layer safety guard — and a **schema-agnostic zero-key synthesizer** grounds SQL against *any* table (no LLM key needed). Joins aren't hardcoded to Olist: a **per-connection join graph** is discovered from declared foreign keys (Postgres/MySQL/SQLite), falling back to `<entity>_id` naming inference for FK-less data — so a question spanning two related tables in your own upload gets a real join, not a single-table guess.
 
 **Connect any warehouse (multi-dialect):** point Nexus at a read-only **Postgres, MySQL, or BigQuery** connection. Grounding, generation, and validation stay dialect-agnostic; only execution is dialect-specific — the generator writes standard SQL and **sqlglot transpiles the *validated* query** to the target dialect, so a `DROP TABLE` is blocked identically on every engine. Read-only is enforced per dialect and verified on connect. The MySQL path is proven with a live round-trip test; see [`docs/MULTI_DIALECT.md`](docs/MULTI_DIALECT.md).
 
@@ -69,7 +69,7 @@ PyPI. See [`packages/sqlguard/README.md`](packages/sqlguard/README.md).
 | **Spider/BIRD** | end-to-end **execution-accuracy** benchmark (the standard text-to-SQL metric) — runs the whole pipeline, safety gate included, per-database; bundled self-contained fixture + a loader for the full Spider/BIRD dev sets. See [`docs/SPIDER_BIRD.md`](docs/SPIDER_BIRD.md) |
 | **Forecast** | **rolling-origin (walk-forward) head-to-head** vs a seasonal-naive reference on daily + monthly grains; RMSE/MAE, zero-masked MAPE, and measured 95% band coverage. Optional PyTorch **LSTM** variant beats Holt-Winters on the ~700-pt daily series (RMSE 9.7k vs 10.2k, ~94% band coverage vs an over-wide 100%). See [`docs/FORECASTING.md`](docs/FORECASTING.md) |
 | **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `169 passed, 6 skipped (live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting, semantic layer |
+| **Tests** | `178 passed, 6 skipped (live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting, semantic layer, join-graph generalization |
 | **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres

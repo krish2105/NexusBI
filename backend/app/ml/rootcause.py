@@ -15,6 +15,7 @@ import statistics
 from app.agents.sql_generator import synthesize_decomposition
 from app.config import settings
 from app.db.introspect import cached_allow_list
+from app.db.joingraph import cached_join_graph
 from app.db.target_pool import TargetPool
 from app.sqlsafety.guard import validate_sql
 
@@ -42,7 +43,8 @@ def explain_change(plan: dict, url: str | None = None, top_k: int = 6) -> dict:
     decomp = {"table": decomp["table"], "col": decomp["col"],
               "label": decomp.get("label", decomp["col"])}
 
-    sql = synthesize_decomposition(metric, decomp, plan.get("filters"))
+    sql = synthesize_decomposition(metric, decomp, plan.get("filters"),
+                                   graph=cached_join_graph(url))
     allow = cached_allow_list(url)
     report = validate_sql(sql, allow, target_dialect="sqlite")
     if not report.allowed:

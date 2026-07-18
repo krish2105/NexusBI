@@ -15,26 +15,9 @@ import re
 
 from app.agents.planner import plan_question
 from app.config import settings
+from app.db.joingraph import JoinGraph, default_join_graph
 from app.llm.client import get_llm
 from app.rag.retriever import RetrievedSchema
-
-# Undirected join graph derived from schema_relationships.csv.
-_EDGES: dict[frozenset[str], str] = {
-    frozenset({"order_items", "orders"}): "order_items.order_id = orders.order_id",
-    frozenset({"order_items", "products"}): "order_items.product_id = products.product_id",
-    frozenset({"order_items", "sellers"}): "order_items.seller_id = sellers.seller_id",
-    frozenset({"products", "categories"}): "products.category_id = categories.category_id",
-    frozenset({"orders", "regions"}): "orders.region_id = regions.region_id",
-    frozenset({"orders", "customers"}): "orders.customer_id = customers.customer_id",
-    frozenset({"orders", "dates"}): "orders.order_date_id = dates.date_id",
-    frozenset({"payments", "orders"}): "payments.order_id = orders.order_id",
-    frozenset({"reviews", "orders"}): "reviews.order_id = orders.order_id",
-}
-_ADJ: dict[str, set[str]] = {}
-for _pair in _EDGES:
-    a, b = tuple(_pair)
-    _ADJ.setdefault(a, set()).add(b)
-    _ADJ.setdefault(b, set()).add(a)
 
 # metric output alias -> monthly_kpis native column (time-series fast path)
 _KPI_COL = {
@@ -50,62 +33,6 @@ _KPI_COL = {
 }
 
 
-def _bfs_path(root: str, target: str) -> list[str]:
-    if root == target:
-        return [root]
-    seen = {root}
-    queue = [[root]]
-    while queue:
-        path = queue.pop(0)
-        for nxt in _ADJ.get(path[-1], ()):
-            if nxt in seen:
-                continue
-            new = path + [nxt]
-            if nxt == target:
-                return new
-            seen.add(nxt)
-            queue.append(new)
-    return []
-
-
-def _plan_joins(required: set[str], root: str) -> tuple[str, list[str], list[str]]:
-    """Return (root_table, [JOIN clauses], [unresolved tables])."""
-    included = {root}
-    edges_needed: set[frozenset[str]] = set()
-    unresolved: list[str] = []
-    for t in required:
-        if t == root:
-            continue
-        path = _bfs_path(root, t)
-        if not path:
-            unresolved.append(t)
-            continue
-        for i in range(len(path) - 1):
-            edges_needed.add(frozenset({path[i], path[i + 1]}))
-            included.add(path[i + 1])
-
-    # Emit JOINs so each table appears only after a neighbour already in FROM.
-    joins: list[str] = []
-    placed = {root}
-    pending = set(edges_needed)
-    progress = True
-    while pending and progress:
-        progress = False
-        for edge in list(pending):
-            a, b = tuple(edge)
-            newcomer = None
-            if a in placed and b not in placed:
-                newcomer = b
-            elif b in placed and a not in placed:
-                newcomer = a
-            if newcomer:
-                joins.append(f"JOIN {newcomer} ON {_EDGES[edge]}")
-                placed.add(newcomer)
-                pending.discard(edge)
-                progress = True
-    return root, joins, unresolved
-
-
 def _default_limit(top_n: int | None) -> int:
     return top_n or 10_000
 
@@ -117,14 +44,16 @@ def _filter_tables(filters: list[dict]) -> set[str]:
 
 
 def synthesize_decomposition(metric: dict, decomp: dict,
-                             filters: list[dict] | None = None) -> str:
+                             filters: list[dict] | None = None,
+                             graph: JoinGraph | None = None) -> str:
     """A metric per (month, dimension-member) query, for root-cause analysis:
     it lets us attribute a period-over-period change to specific members."""
+    graph = graph or default_join_graph()
     filters = filters or []
     required = ({metric["base"], "orders", "dates", decomp["table"]}
                 | _filter_tables(filters))
     root = "order_items" if "order_items" in required else metric["base"]
-    root, joins, _ = _plan_joins(required, root)
+    root, joins, _ = graph.plan_joins(required, root)
     where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""
     join_block = ("\n" + "\n".join(joins)) if joins else ""
     return (f"SELECT dates.year_month AS period, {decomp['col']} AS member, "
@@ -185,9 +114,27 @@ def _classify_cols(table):
     return dates, numerics, texts
 
 
-def synthesize_generic(question: str, plan: dict, schema: RetrievedSchema
-                       ) -> tuple[str, str, list[str]]:
-    """Build a grounded single-table query for an arbitrary schema."""
+def _cross_table_dim(schema: RetrievedSchema, base: str, q_tokens: set[str],
+                     graph: JoinGraph) -> tuple[str, str] | None:
+    """Find a question-matching text column in a *different* table that joins to
+    ``base`` via the introspected graph. Returns (table, column) or None."""
+    for t in schema.tables:
+        if t.name == base or not graph.bfs_path(base.lower(), t.name.lower()):
+            continue
+        _, _, texts = _classify_cols(t)
+        m = next((c for c in texts if _col_matches(c, q_tokens)), None)
+        if m:
+            return t.name, m
+    return None
+
+
+def synthesize_generic(question: str, plan: dict, schema: RetrievedSchema,
+                       graph: JoinGraph | None = None) -> tuple[str, str, list[str]]:
+    """Build a grounded query for an arbitrary schema. Single-table by default;
+    joins to a related table (via the introspected/inferred graph) when the
+    grouping dimension lives in one — so BYO data with foreign keys gets real
+    joins, not just single-table answers."""
+    graph = graph or default_join_graph()
     q_tokens = _toks(question)
     assumptions: list[str] = []
 
@@ -199,6 +146,7 @@ def synthesize_generic(question: str, plan: dict, schema: RetrievedSchema
     table = max(schema.tables, key=tscore)
     if tscore(table) == 0:
         assumptions.append(f"Question didn't name a table; used '{table.name}'.")
+    base = table.name
     dates, numerics, texts = _classify_cols(table)
 
     # 2) Metric. Aggregation intent comes from the QUESTION first, then the column.
@@ -216,57 +164,66 @@ def synthesize_generic(question: str, plan: dict, schema: RetrievedSchema
     else:
         col = None
 
-    if col is None:
-        metric_expr, alias = "COUNT(*)", "row_count"
-    else:
-        if q_wants_avg:
-            agg = "AVG"
-        elif q_wants_sum:
-            agg = "SUM"
-        elif _RATEISH.search(col):
-            agg = "AVG"
-        else:
-            agg = "SUM"
-        metric_expr = (f'ROUND(AVG("{col}"), 2)' if agg == "AVG" else f'{agg}("{col}")')
-        alias = f"{agg.lower()}_{col}".lower()
-
-    # 3) Dimension.
+    # 3) Dimension — prefer a base-table match, then a JOINED table, then a fallback.
     mentioned_text = next((c for c in texts if _col_matches(c, q_tokens)), None)
     is_time = plan.get("is_time_series") and dates
     top_n = plan.get("top_n")
+    join_table: str | None = None
     if is_time:
         dim, dim_label, order = f'"{dates[0]}"', dates[0], "ASC"
     elif mentioned_text:
         dim, dim_label, order = f'"{mentioned_text}"', mentioned_text, "DESC"
+    elif (cross := _cross_table_dim(schema, base, q_tokens, graph)):
+        join_table, cross_col = cross
+        dim, dim_label, order = f'"{join_table}"."{cross_col}"', cross_col, "DESC"
+        assumptions.append(f"Joined '{base}' to '{join_table}' on the introspected "
+                           f"key to group by '{cross_col}'.")
     elif (top_n or _re.search(r"\bby\b|\bper\b|\beach\b|top\b", question, _re.I)) and texts:
         dim, dim_label, order = f'"{texts[0]}"', texts[0], "DESC"
         assumptions.append(f"Grouped by '{texts[0]}' (first categorical column).")
     else:
         dim = None
 
-    tbl = f'"{table.name}"'
+    # Qualify the metric with the base table only when a join makes it ambiguous.
+    q = f'"{base}".' if join_table else ""
+    if col is None:
+        metric_expr, alias = "COUNT(*)", "row_count"
+    else:
+        if q_wants_avg or (not q_wants_sum and _RATEISH.search(col)):
+            metric_expr, alias = f'ROUND(AVG({q}"{col}"), 2)', f"avg_{col}".lower()
+        else:
+            metric_expr, alias = f'{"SUM"}({q}"{col}")', f"sum_{col}".lower()
+
+    from_block = f'"{base}"'
+    if join_table:
+        _, joins, _ = graph.plan_joins({base.lower(), join_table.lower()}, base.lower())
+        from_block = f'"{base}"' + ("\n" + "\n".join(joins) if joins else "")
+
     if dim is None:
-        sql = f"SELECT {metric_expr} AS {alias}\nFROM {tbl}\nLIMIT 10000"
-        return sql, f"{alias} across {table.name}.", assumptions
+        sql = f"SELECT {metric_expr} AS {alias}\nFROM {from_block}\nLIMIT 10000"
+        return sql, f"{alias} across {base}.", assumptions
 
     limit = top_n or 50
     order_by = alias if order == "DESC" else dim
     sql = (f"SELECT {dim} AS {dim_label}, {metric_expr} AS {alias}\n"
-           f"FROM {tbl}\nGROUP BY {dim}\n"
+           f"FROM {from_block}\nGROUP BY {dim}\n"
            f"ORDER BY {order_by} {order}\nLIMIT {limit}")
-    return sql, f"{alias} by {dim_label} from {table.name}.", assumptions
+    where = (f" (joined to {join_table})" if join_table else "")
+    return sql, f"{alias} by {dim_label} from {base}{where}.", assumptions
 
 
 def synthesize_sql(question: str, plan: dict,
-                   schema: RetrievedSchema | None = None) -> tuple[str, str, list[str]]:
+                   schema: RetrievedSchema | None = None,
+                   graph: JoinGraph | None = None) -> tuple[str, str, list[str]]:
     """Deterministic grounded synthesis. Returns (sql, explanation, assumptions).
 
     Uses the Olist-tuned metric/dimension library when the connection is the
     Olist star schema; otherwise falls back to the schema-agnostic synthesizer so
-    zero-key generation still works on arbitrary uploaded data.
-    """
+    zero-key generation still works on arbitrary uploaded data. Joins come from
+    the connection's ``graph`` (introspected FKs / inferred / curated)."""
     if schema is not None and not is_olist_schema(schema):
-        return synthesize_generic(question, plan, schema)
+        return synthesize_generic(question, plan, schema, graph)
+    graph = graph or default_join_graph()
 
     metric = plan["metric"]
     dimension = plan["dimension"]
@@ -291,7 +248,7 @@ def synthesize_sql(question: str, plan: dict,
         # Group by the real date dimension (orders -> dates).
         required = {metric["base"], "orders", "dates"} | _filter_tables(filters)
         root = "order_items" if "order_items" in required else metric["base"]
-        root, joins, _ = _plan_joins(required, root)
+        root, joins, _ = graph.plan_joins(required, root)
         where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""
         join_block = ("\n" + "\n".join(joins)) if joins else ""
         sql = (f"SELECT dates.year_month AS year_month, {metric['expr']} AS {alias}\n"
@@ -309,7 +266,7 @@ def synthesize_sql(question: str, plan: dict,
                          "label": "category_name_en"}
         required = {metric["base"], dimension["table"]} | _filter_tables(filters)
         root = "order_items" if "order_items" in required else metric["base"]
-        root, joins, unresolved = _plan_joins(required, root)
+        root, joins, unresolved = graph.plan_joins(required, root)
         where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""
         join_block = ("\n" + "\n".join(joins)) if joins else ""
         limit = _default_limit(top_n)
@@ -327,7 +284,7 @@ def synthesize_sql(question: str, plan: dict,
     # --- scalar ---
     required = {metric["base"]} | _filter_tables(filters)
     root = "order_items" if "order_items" in required else metric["base"]
-    root, joins, _ = _plan_joins(required, root)
+    root, joins, _ = graph.plan_joins(required, root)
     where = f"\nWHERE {' AND '.join(f['sql'] for f in filters)}" if filters else ""
     join_block = ("\n" + "\n".join(joins)) if joins else ""
     sql = (f"SELECT {metric['expr']} AS {alias}\n"
@@ -372,7 +329,7 @@ def _extract_sql(text: str) -> str:
 
 
 def generate_sql(question: str, schema: RetrievedSchema,
-                 plan: dict | None = None) -> dict:
+                 plan: dict | None = None, graph: JoinGraph | None = None) -> dict:
     plan = plan or plan_question(question)
     llm = get_llm()
 
@@ -390,13 +347,13 @@ def generate_sql(question: str, schema: RetrievedSchema,
         except Exception:  # noqa: BLE001 - fall back deterministically
             pass
 
-    sql, expl, assumptions = synthesize_sql(question, plan, schema)
+    sql, expl, assumptions = synthesize_sql(question, plan, schema, graph)
     return {"sql": sql, "explanation": expl, "assumptions": assumptions,
             "generator": "deterministic", "plan": plan}
 
 
 def repair_sql(question: str, schema: RetrievedSchema, plan: dict,
-               errors: list[str]) -> dict:
+               errors: list[str], graph: JoinGraph | None = None) -> dict:
     """Repair attempt after a validation failure (Layer 5)."""
     llm = get_llm()
     if llm.is_llm:  # pragma: no cover
@@ -413,6 +370,6 @@ def repair_sql(question: str, schema: RetrievedSchema, plan: dict,
         except Exception:  # noqa: BLE001
             pass
     # Deterministic path is already grounded; re-synthesize as a safe fallback.
-    sql, expl, assumptions = synthesize_sql(question, plan, schema)
+    sql, expl, assumptions = synthesize_sql(question, plan, schema, graph)
     return {"sql": sql, "explanation": expl + " (resynthesized)",
             "assumptions": assumptions, "generator": "deterministic", "plan": plan}

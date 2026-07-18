@@ -137,6 +137,57 @@ class TargetPool:
                 "ORDER BY ordinal_position", (table,))
             return [(r[0], r[1]) for r in cur.fetchall()]
 
+    def foreign_keys(self) -> list[tuple[str, str, str, str]]:
+        """Declared FK constraints as ``(from_table, from_col, to_table, to_col)``,
+        all lower-cased. Powers the introspected join graph. Empty when the schema
+        declares none (e.g. the CSV-loaded demo, or uploaded data) — callers fall
+        back to name-based inference / curated edges."""
+        if self.dialect == "sqlite":
+            out: list[tuple[str, str, str, str]] = []
+            with self._sqlite_ro() as con:
+                tables = [r[0] for r in con.execute(
+                    "SELECT name FROM sqlite_master WHERE type='table'")]
+                for t in tables:
+                    for r in con.execute(f'PRAGMA foreign_key_list("{t}")'):
+                        # (id, seq, table, from, to, on_update, on_delete, match)
+                        to_tbl, frm, to_col = r[2], r[3], r[4]
+                        if not (to_tbl and frm):
+                            continue
+                        out.append((t.lower(), frm.lower(), to_tbl.lower(),
+                                    (to_col or frm).lower()))
+            return out
+        if self.dialect == "mysql":  # pragma: no cover - live server
+            con = self._mysql_conn()
+            try:
+                cur = con.cursor()
+                cur.execute(
+                    "SELECT table_name, column_name, referenced_table_name, "
+                    "referenced_column_name FROM information_schema.key_column_usage "
+                    "WHERE table_schema = DATABASE() "
+                    "AND referenced_table_name IS NOT NULL")
+                return [(a.lower(), b.lower(), c.lower(), d.lower())
+                        for a, b, c, d in cur.fetchall()]
+            finally:
+                con.close()
+        if self.dialect == "bigquery":  # pragma: no cover - rarely declared
+            return []
+        with self._pg_conn() as con:  # pragma: no cover - live server
+            cur = con.cursor()
+            cur.execute(
+                "SELECT tc.table_name, kcu.column_name, ccu.table_name, "
+                "ccu.column_name "
+                "FROM information_schema.table_constraints tc "
+                "JOIN information_schema.key_column_usage kcu "
+                "  ON tc.constraint_name = kcu.constraint_name "
+                "  AND tc.table_schema = kcu.table_schema "
+                "JOIN information_schema.constraint_column_usage ccu "
+                "  ON ccu.constraint_name = tc.constraint_name "
+                "  AND ccu.table_schema = tc.table_schema "
+                "WHERE tc.constraint_type = 'FOREIGN KEY' "
+                "  AND tc.table_schema = current_schema()")
+            return [(a.lower(), b.lower(), c.lower(), d.lower())
+                    for a, b, c, d in cur.fetchall()]
+
     # -- execution -----------------------------------------------------------
     def execute(self, sql: str) -> ExecResult:
         """Run an ALREADY-VALIDATED read-only SELECT. Never call with raw LLM SQL."""

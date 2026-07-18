@@ -25,6 +25,7 @@ from app.config import settings
 from app.core.tracing import QueryTrace
 from app.db.app_store import get_store
 from app.db.introspect import cached_allow_list
+from app.db.joingraph import cached_join_graph
 from app.db.target_pool import ReadOnlyExecutionError, TargetPool
 from app.ml.anomaly_detect import detect_anomalies
 from app.ml.chart_selector import select_chart
@@ -56,6 +57,7 @@ def run_analysis(question: str, connection_id: str = "demo",
     qid = query_id or uuid.uuid4().hex
     store = get_store() if persist else None
     allow = cached_allow_list(url)
+    join_graph = cached_join_graph(url)
     pool = TargetPool(url=url)
 
     if history is None and conversation_id and store:
@@ -186,7 +188,7 @@ def run_analysis(question: str, connection_id: str = "demo",
 
     # --- generate -> validate -> (repair loop) ---
     yield emit(_event("sql_generator", "running", label="Writing SQL"))
-    gen = generate_sql(display_question, schema, plan)
+    gen = generate_sql(display_question, schema, plan, graph=join_graph)
     state["generator"] = gen["generator"]
     report = None
     while True:
@@ -236,7 +238,7 @@ def run_analysis(question: str, connection_id: str = "demo",
         state["repair_attempts"] += 1
         yield emit(_event("sql_generator", "running",
                           label=f"Repairing SQL (attempt {state['repair_attempts']})"))
-        gen = repair_sql(question, schema, plan, report.errors)
+        gen = repair_sql(question, schema, plan, report.errors, graph=join_graph)
 
     # --- executor ---
     yield emit(_event("executor", "running", label="Running query (read-only)"))

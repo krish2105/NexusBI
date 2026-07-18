@@ -1,6 +1,7 @@
-# 3.13 matches the version the pinned requirements are tested against (some pins,
-# e.g. numpy 2.5.x, require >=3.12), so the deployed image == the tested env.
-FROM python:3.13-slim
+# Matches the CI runner (.github/workflows/ci.yml) so the deployed image == the
+# tested env. requirements.txt pins numpy==2.4.6 specifically for 3.11 compat
+# (2.5.0+ requires >=3.12) — keep this in lockstep with CI's python-version.
+FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app

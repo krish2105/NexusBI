@@ -43,6 +43,12 @@ services:
       # --- Production target DB (optional; default is the bundled SQLite demo) ---
       # - key: DEMO_TARGET_URL         # read-only Postgres DSN
       #   sync: false
-      # --- Update this to your real Vercel domain after the frontend deploys ---
+      # --- Browser origins allowed to call this API ---
+      # CORS_ORIGINS is the fixed list (comma-separated). CORS_ORIGIN_REGEX
+      # additionally admits Vercel's per-branch/per-deploy preview URLs, which
+      # all end in this account's unique suffix — without it, opening the app
+      # on e.g. nexus-bi-git-main-….vercel.app fails every fetch.
       - key: CORS_ORIGINS
-        value: '["https://your-frontend.vercel.app"]'
+        value: https://nexus-bi-iota.vercel.app,http://localhost:3000
+      - key: CORS_ORIGIN_REGEX
+        value: ^https://(nexus-bi-iota\.vercel\.app|[a-z0-9-]+-krishnamathur008-1499s-projects\.vercel\.app)$

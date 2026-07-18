@@ -48,6 +48,11 @@ class Settings(BaseSettings):
             return [origin.strip() for origin in v.split(",") if origin.strip()]
         return v
 
+    # Optional regex for origins that vary per deploy (e.g. Vercel's per-branch
+    # and per-deployment preview URLs, which all share one account suffix).
+    # Matched in ADDITION to cors_origins.
+    cors_origin_regex: str | None = None
+
     @field_validator(
         "app_db_url", "demo_target_url", "jwt_secret", "encryption_key",
         "monitor_run_token", "groq_api_key", "ollama_base_url",

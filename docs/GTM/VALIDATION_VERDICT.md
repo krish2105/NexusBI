@@ -92,8 +92,16 @@ after the fact:
 > stays a top-of-portfolio hiring artifact, which was always the higher-probability
 > payoff._
 
-**Answer:** _(pending — run the conversations first)_
+**Answer:** N/A — no conversations were run. This gate was **overridden by founder
+decision on 2026-07-18**, not resolved by evidence. Phase 3 (auth/billing/legal/ops) was
+built and merged without it. The question this file exists to answer — *is provable
+safety a top-3 buying criterion, or a checkbox a read-only role already ticks* — remains
+genuinely unknown.
 
-**Decision:** _(Stop / Pivot to semantic layer / Proceed to Phase 3)_
+**Decision:** Proceed to Phase 3 (by override, not by signal).
 
-**Date:** _____________
+**Date:** 2026-07-18
+
+**Recommended follow-up:** the 5 conversations in [OUTREACH.md](./OUTREACH.md) are still
+the cheapest way to find out whether Phase 4's ongoing spend is worth committing to — run
+them retroactively against the now-live checkout before scaling spend on this thesis.

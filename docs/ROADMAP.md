@@ -45,41 +45,53 @@ bottleneck now that the build quality is high.
 
 ---
 
-## Phase 2 — Validate the bet (≈1–2 weeks, mostly not coding) 🟡 gates everything after
+## Phase 2 — Validate the bet ⚠️ **SKIPPED BY DECISION (2026-07-18)**
 
-Assumes **Move B**. This phase is **conversations, not commits.** It exists to answer the one
-question that determines whether Phases 3–5 are worth writing at all. **The kit to run it is
-built — see [`docs/GTM/`](./GTM/).** What's left is the talking, which only you can do.
+Assumes **Move B**. This phase was designed as **conversations, not commits** — the one
+question that determines whether Phase 3+ is worth building at all.
 
 > **Is "provable safety" a top-3 buying criterion — or a checkbox a read-only role already ticks?**
-> Honest prior: probably the latter.
+> Honest prior: probably the latter. **This was never tested.**
 
 | # | Task | Status |
 |---|---|---|
-| 2.1 | Name **one** ICP | ✅ **Done** — [`GTM/ICP.md`](./GTM/ICP.md) (mid-market Postgres/MySQL data teams, sold on governed access + audit) |
-| 2.2 | 5 design-partner conversations | 🎯 **Your move** — templates + Mom-Test script ready in [`GTM/OUTREACH.md`](./GTM/OUTREACH.md) |
-| 2.3 | Try to get **one** read replica connected | 🎯 **Your move** — never prod. The real test of the thesis. |
-| 2.4 | Write down the verdict | 📝 **Scaffolded** — fill + commit [`GTM/VALIDATION_VERDICT.md`](./GTM/VALIDATION_VERDICT.md) |
+| 2.1 | Name **one** ICP | ✅ Done — [`GTM/ICP.md`](./GTM/ICP.md) |
+| 2.2 | 5 design-partner conversations | ❌ **Not run** |
+| 2.3 | Try to get **one** read replica connected | ❌ **Not attempted** |
+| 2.4 | Write down the verdict | ⚠️ **No verdict — [`GTM/VALIDATION_VERDICT.md`](./GTM/VALIDATION_VERDICT.md) is still blank.** Phase 3 was authorized without it, by explicit founder decision, not by evidence. |
 
-**Decision gate:**
-- **≥3 of 5 say "a read-only role already does this"** → the wedge is a checkbox. **Stop, or pivot** to the semantic/metrics layer (already half-built) as the primary product.
-- **≥2 want to connect a replica and discuss price** → proceed to Phase 3.
+**What this means going forward:** Phase 3 shipped on a **prior, not a signal.** The kit in
+[`docs/GTM/`](./GTM/) still works — running it *retroactively*, even against a live
+paid-tier product, is strictly higher-signal than running it never. Recommended before
+spending real ad/outbound budget: run 2.2–2.4 anyway, now with a working checkout to point
+people at. The gate that was skipped is still a gap in evidence, not a solved question.
 
 ---
 
-## Phase 3 — First paying customer (≈2–3 months) 🔵 only after Phase 2 passes
+## Phase 3 — First paying customer ✅ **SHIPPED (2026-07-18), unverified in production**
 
-| Track | Work |
-|---|---|
-| Auth | Login/signup shell, session handling, indexed key-id auth (kills the O(n) PBKDF2 scan) |
-| Billing | Stripe Free/Pro tiers, per-workspace metering, **BYO-LLM-key from the first paid tier** |
-| Legal | ToS + Privacy + DPA + sub-processor list; encrypt `queries.payload` or make caching opt-in with TTL |
-| Ops | Sentry, uptime check, status page, XFF-aware rate limiting |
-| Perf | Target-DB connection pooling; Redis-backed rate limiter + allow-list cache |
+| Track | Work | Status |
+|---|---|---|
+| Auth | Login/signup shell, JWT sessions, indexed key-id auth (kills the O(n) PBKDF2 scan) | ✅ Built, tested (`test_auth.py`) |
+| Billing | Stripe Free/Pro tiers, per-workspace metering, **BYO-LLM-key from the first paid tier** | ✅ Built, tested (`test_billing.py`). **Dark in production** — no `STRIPE_SECRET_KEY` set anywhere, so nothing can charge until you deliberately configure it |
+| Legal | ToS + Privacy + DPA + sub-processor list; `queries.payload` encrypted at rest | ✅ Built, tested (`test_payload_encryption.py`) |
+| Ops | Sentry, uptime `/status`, XFF-aware rate limiting | ✅ Built, tested (`test_ops.py`) |
+| Perf | Target-DB connection pooling; Redis-backed rate limiter + allow-list cache | ✅ Built, tested (`test_perf_scaling.py`) |
+
+**Local verification (2026-07-19):** full backend suite 209 passed / 6 skipped / 0 failed;
+frontend production build clean across all routes including the 6 new pages.
+
+**🔴 Known live gap:** Vercel has deployed the new frontend pages (`/pricing`, `/login`,
+`/signup`, `/status`), but the Render backend has **not** redeployed past commit `3fe7cc1`
+— `/status` and `/auth/login` both 404 in production as of this writing. Frontend degrades
+gracefully (no crash — `AuthProvider` no-ops without a stored token, `/pricing` renders
+statically), but checkout/login/status are non-functional live until the backend deploy is
+sorted. Needs a check of Render's Deploys tab for a build failure.
 
 **Cost reality:** Vercel Hobby is non-commercial → **Vercel Pro ($20/mo)** at monetization.
-Plus Redis + managed Postgres + a non-sleeping instance ≈ **$30–60/mo before the first dollar.**
-This breaks the "free-tier SaaS" framing: it's paid-from-day-one or it's a portfolio piece.
+Plus Redis + managed Postgres + a non-sleeping instance ≈ **$30–60/mo before the first dollar**
+— once billing is actually turned on. This breaks the "free-tier SaaS" framing: it's
+paid-from-day-one or it's a portfolio piece.
 
 ---
 
@@ -112,20 +124,25 @@ than chasing the generator. Certified numbers are what enterprise BI budget actu
 ## Dependency graph
 
 ```
-Phase 0 ──┬──> Phase 1 (hiring artifact)  ────> DONE, ship it
-          └──> Phase 2 (validate)  ──[gate]──> Phase 3 ──> Phase 4
-                                       │
-                                       └──[fail]──> pivot to semantic layer (Phase 5)
+Phase 0 ──> Phase 1 (hiring artifact) ──────────────> DONE, shipped
+         └─X Phase 2 (validate) ──[gate, skipped]──> Phase 3 ──> Phase 4
+                                                          │
+                                              (built without evidence)
 ```
 
-Phase 1 and Phase 2 are **independent and can run in parallel** — one is writing, the other is
-talking. Phases 3+ should not start until Phase 2 returns a verdict.
+Original design: Phase 1 and Phase 2 run in parallel, Phase 3 waits for Phase 2's verdict.
+**Actual: Phase 2's gate was bypassed by founder decision on 2026-07-18** — Phase 3 shipped
+on zero customer conversations. The `docs/GTM/` kit still exists and still works; running
+it now, against a live paid product, remains the way to find out if Phase 4's ~$80–200/mo
+commitment is worth making.
 
 ---
 
-## What I'd actually do
+## What I'd actually do from here
 
-Phase 0, then Phase 1, then Phase 2 — and **hold Phase 3 until Phase 2 answers.** Phase 1 has
-guaranteed payoff (a job); Phase 3 has speculative payoff (a business) and a real monthly bill.
-Doing Phase 1 first costs nothing and makes Phase 2's conversations easier, because you'll have
-a demo link and a case study to open with.
+The gate is already crossed, so the highest-leverage next move isn't re-litigating that —
+it's **closing the loop the shortcut created**: get the Render deploy green so the live
+site matches what's in git, then run the Phase 2 conversations retroactively (you now have
+a stronger opener: a working demo *and* a checkout link, not just a promise). If those
+conversations come back "checkbox," Phase 4's spend is still avoidable — the code doesn't
+force the money to follow.

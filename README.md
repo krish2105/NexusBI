@@ -47,9 +47,9 @@ Built and evaluated on the **real Olist Brazilian e-commerce dataset** — 99,44
 | **SQL safety** | **100%** (29/29) adversarial queries blocked, control allowed |
 | **Text-to-SQL** | 100% data-integrity; ~49% zero-key generator execution accuracy (higher with a Groq key) |
 | **Spider/BIRD** | end-to-end **execution-accuracy** benchmark (the standard text-to-SQL metric) — runs the whole pipeline, safety gate included, per-database; bundled self-contained fixture + a loader for the full Spider/BIRD dev sets. See [`docs/SPIDER_BIRD.md`](docs/SPIDER_BIRD.md) |
-| **Forecast** | Holt-Winters backtest, MAPE on a 3-month holdout |
+| **Forecast** | **rolling-origin (walk-forward) head-to-head** vs a seasonal-naive reference on daily + monthly grains; RMSE/MAE, zero-masked MAPE, and measured 95% band coverage. Optional PyTorch **LSTM** variant beats Holt-Winters on the ~700-pt daily series (RMSE 9.7k vs 10.2k, ~94% band coverage vs an over-wide 100%). See [`docs/FORECASTING.md`](docs/FORECASTING.md) |
 | **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `125 passed (+4 live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark |
+| **Tests** | `139 passed (+4 live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting |
 | **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres
@@ -83,6 +83,7 @@ See **[`docs/DEMO.md`](docs/DEMO.md)** for a 90-second walkthrough script.
 ### Upgrades (all optional, all free)
 - **General LLM:** set `GROQ_API_KEY` (free at console.groq.com) — the SQL generator and narrator switch to `llama-3.3-70b`. Or run **Ollama** locally. Re-run `python -m evals.run_evals` with the key set to see the accuracy lift over the zero-key baseline, broken down by question difficulty.
 - **Observability:** set `LANGFUSE_PUBLIC_KEY` / `LANGFUSE_SECRET_KEY` (free at cloud.langfuse.com) — every query gets a full trace with a child span per agent node (latency, generator used, safety verdict). No-op with zero overhead when unset.
+- **Deep-learning forecaster:** `pip install -r backend/requirements-ml.txt` then set `FORECAST_BACKEND=lstm` — a deterministic PyTorch **LSTM** replaces Holt-Winters, falling back gracefully whenever it can't train. Off by default so the free-tier image stays torch-free. See [`docs/FORECASTING.md`](docs/FORECASTING.md).
 - **Production Postgres:** `docker compose up -d`, load the data package's `load_postgres.sql` + `read_only_role.sql` into `demo-db`, and set `DEMO_TARGET_URL` to the read-only DSN.
 - **Local embeddings:** `pip install sentence-transformers` and set `USE_EMBEDDINGS=true`.
 
@@ -109,6 +110,7 @@ Two databases, kept strictly separate. The LLM only plans and narrates — the d
 - **[`docs/DEPLOY.md`](docs/DEPLOY.md)** — go-live runbook (Groq, Langfuse, Render, Vercel)
 - **[`docs/MULTI_DIALECT.md`](docs/MULTI_DIALECT.md)** — SQLite/Postgres/MySQL/BigQuery via one dialect-agnostic core
 - **[`docs/SPIDER_BIRD.md`](docs/SPIDER_BIRD.md)** — Spider/BIRD execution-accuracy benchmark (run the bundled fixture or the full dev sets)
+- **[`docs/FORECASTING.md`](docs/FORECASTING.md)** — classical (zero-key) + optional PyTorch LSTM forecasting, with a rolling-origin head-to-head
 - **[`docs/VIVA.md`](docs/VIVA.md)** — interview Q&A
 
 ## Deploy

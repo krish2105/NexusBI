@@ -32,6 +32,7 @@ export default function Trust() {
   const gov = t.governance || {};
   const fb = t.feedback || {};
   const obs = t.observability || {};
+  const fc = t.forecast || {};
 
   return (
     <main className="mx-auto max-w-6xl px-4 pb-20 pt-28">
@@ -106,6 +107,75 @@ export default function Trust() {
           </div>
         </motion.div>
       </section>
+
+      {/* forecast head-to-head */}
+      {fc.grains && Object.keys(fc.grains).length > 0 && (
+        <section className="mt-8">
+          <h2 className="mb-1 text-lg font-medium">
+            Forecast head-to-head — measured, not asserted
+          </h2>
+          <p className="mb-3 text-sm text-ink-dim">
+            Rolling-origin (walk-forward) backtest, errors pooled across folds. A
+            model must beat the seasonal-naive reference to matter.
+            {fc.lstm_reproducible != null && (
+              <span className="ml-1">
+                LSTM variant{" "}
+                {fc.torch_available ? "active" : "off (install requirements-ml.txt)"}
+                {fc.torch_available &&
+                  `, reproducible: ${fc.lstm_reproducible ? "yes" : "no"}`}
+                .
+              </span>
+            )}
+          </p>
+          <div className="grid gap-4 md:grid-cols-2">
+            {Object.entries(fc.grains).map(([grain, g]: any) => (
+              <div key={grain} className="card p-0">
+                <div className="flex items-center justify-between border-b border-line px-4 py-2">
+                  <span className="font-medium capitalize">{grain} revenue</span>
+                  <span className="text-xs text-ink-faint">
+                    {g.n_origins} folds × {g.holdout}
+                  </span>
+                </div>
+                <table className="w-full text-left text-sm">
+                  <thead className="text-ink-dim">
+                    <tr>
+                      <th className="px-4 py-1.5 font-medium">Engine</th>
+                      <th className="px-4 py-1.5 font-medium">RMSE</th>
+                      <th className="px-4 py-1.5 font-medium">MAPE</th>
+                      <th className="px-4 py-1.5 font-medium">95% cov</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {["seasonal_naive", "holtwinters", "lstm"].map((name) => {
+                      const m = g.engines?.[name];
+                      const win = g.best === name;
+                      return (
+                        <tr key={name} className="border-t border-line">
+                          <td className={`px-4 py-1.5 ${win ? "font-medium text-pos" : ""}`}>
+                            {win && "★ "}
+                            {name.replace("_", "-")}
+                          </td>
+                          <td className="px-4 py-1.5 font-mono text-xs">
+                            {m ? Math.round(m.rmse).toLocaleString() : "—"}
+                          </td>
+                          <td className="px-4 py-1.5 font-mono text-xs">
+                            {m?.mape_pct != null ? `${m.mape_pct}%` : "—"}
+                          </td>
+                          <td className="px-4 py-1.5 font-mono text-xs text-ink-faint">
+                            {m?.band_coverage_95 != null
+                              ? `${Math.round(m.band_coverage_95 * 100)}%`
+                              : "—"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ))}
+          </div>
+        </section>
+      )}
 
       {/* safety eval detail */}
       <section className="mt-8">

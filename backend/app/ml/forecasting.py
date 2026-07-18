@@ -10,9 +10,10 @@ from __future__ import annotations
 import math
 import re
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, timedelta
 
 _YM = re.compile(r"^(\d{4})-(\d{2})$")
+_YMD = re.compile(r"^(\d{4})-(\d{2})-(\d{2})$")
 
 
 @dataclass
@@ -38,6 +39,11 @@ class Forecast:
 
 
 def _next_period_labels(last_label: str, horizon: int) -> list[str]:
+    # Daily (YYYY-MM-DD): advance by calendar days.
+    md = _YMD.match(str(last_label))
+    if md:
+        d = date(int(md.group(1)), int(md.group(2)), int(md.group(3)))
+        return [(d + timedelta(days=i + 1)).isoformat() for i in range(horizon)]
     m = _YM.match(str(last_label))
     if m:
         y, mo = int(m.group(1)), int(m.group(2))
@@ -58,7 +64,14 @@ def _next_period_labels(last_label: str, horizon: int) -> list[str]:
 
 
 def _seasonal_periods(labels: list[str]) -> int:
-    return 12 if all(_YM.match(str(x)) for x in labels) else 1
+    """Seasonal cycle length inferred from the label format: monthly→12, daily→7
+    (weekly), otherwise none. Giving the classical baseline the right seasonality
+    keeps a head-to-head against the LSTM fair."""
+    if labels and all(_YMD.match(str(x)) for x in labels):
+        return 7
+    if labels and all(_YM.match(str(x)) for x in labels):
+        return 12
+    return 1
 
 
 def _trim_partial_periods(labels: list[str], values: list[float]) -> tuple[list, list, int]:
@@ -81,27 +94,62 @@ def _trim_partial_periods(labels: list[str], values: list[float]) -> tuple[list,
 
 
 def forecast_series(labels: list[str], values: list[float], horizon: int = 6,
-                    min_points: int = 6) -> Forecast | None:
+                    min_points: int = 6, backend: str | None = None) -> Forecast | None:
+    """Forecast a time series with confidence bands.
+
+    ``backend`` selects the engine — ``"holtwinters"`` (default, zero-key,
+    deterministic), ``"lstm"`` (optional PyTorch variant), or ``"auto"`` (LSTM
+    when torch is available and the series is long enough, else Holt-Winters).
+    When ``None`` it reads ``settings.forecast_backend``. The LSTM path always
+    degrades gracefully to the classical model, so the caller always gets a
+    forecast when one is possible.
+    """
     labels = [str(x) for x in labels]
     values = [float(v) for v in values]
     labels, values, trimmed = _trim_partial_periods(labels, values)
     if len(values) < min_points:
         return None
 
+    if backend is None:
+        try:
+            from app.config import settings
+            backend = settings.forecast_backend
+        except Exception:  # noqa: BLE001
+            backend = "holtwinters"
+
     fut_labels = _next_period_labels(labels[-1], horizon)
     seasonal = _seasonal_periods(labels)
 
-    try:
-        fc = _hw_forecast(labels, values, horizon, fut_labels, seasonal)
-        # Reject a degenerate seasonal collapse (e.g. points clamped to ~0).
-        median = sorted(values)[len(values) // 2]
-        if median > 0 and sum(1 for p in fc.point if p <= 0.02 * median) > 0:
-            fc = _ols_forecast(labels, values, horizon, fut_labels)
-    except Exception:  # noqa: BLE001 - fall back to deterministic model
-        fc = _ols_forecast(labels, values, horizon, fut_labels)
+    fc: Forecast | None = None
+    if backend in ("lstm", "auto"):
+        try:
+            from app.ml.lstm_forecast import lstm_forecast
+
+            fc = lstm_forecast(labels, values, horizon, fut_labels, seasonal)
+        except Exception:  # noqa: BLE001 - torch missing / training failure
+            fc = None
+
+    if fc is None:
+        fc = _classical_forecast(labels, values, horizon, fut_labels, seasonal)
 
     if trimmed:
         fc.notes.insert(0, f"Trimmed {trimmed} partial boundary period(s) before modeling.")
+    return fc
+
+
+def _classical_forecast(labels, values, horizon, fut_labels, seasonal) -> Forecast:
+    """Holt-Winters with an OLS-trend fallback — the zero-key deterministic path."""
+    try:
+        fc = _hw_forecast(labels, values, horizon, fut_labels, seasonal)
+        # Reject a degenerate collapse (the WHOLE forecast clamped to ~0). Judged
+        # on the mean so a legitimately low seasonal day (e.g. a weekend in the
+        # daily series) doesn't trip the guard the way a per-point test would.
+        median = sorted(values)[len(values) // 2]
+        mean_pt = sum(fc.point) / len(fc.point) if fc.point else 0.0
+        if median > 0 and mean_pt <= 0.02 * median:
+            fc = _ols_forecast(labels, values, horizon, fut_labels)
+    except Exception:  # noqa: BLE001 - fall back to deterministic model
+        fc = _ols_forecast(labels, values, horizon, fut_labels)
     return fc
 
 

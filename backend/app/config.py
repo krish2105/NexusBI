@@ -73,6 +73,26 @@ class Settings(BaseSettings):
     # --- ML ---
     forecast_min_points: int = 6
     forecast_horizon: int = 6
+    # Forecast engine: "holtwinters" (default, zero-key, deterministic) or "lstm"
+    # (optional PyTorch variant — install requirements-ml.txt). "auto" uses the
+    # LSTM only when torch is importable and the series is long enough, else falls
+    # back to Holt-Winters. The default keeps the free-tier path torch-free.
+    forecast_backend: Literal["holtwinters", "lstm", "auto"] = "holtwinters"
+    # LSTM hyperparameters (only used when the LSTM backend is active).
+    lstm_lookback: int = 28          # input window (4 weekly cycles); clamped for short series
+    lstm_hidden_size: int = 32
+    lstm_epochs: int = 200           # FIXED epoch count (deterministic, no wall-clock stop)
+    lstm_lr: float = 1e-2
+    lstm_weight_decay: float = 1e-4
+    lstm_grad_clip: float = 1.0
+    lstm_dropout: float = 0.1
+    lstm_seed: int = 1729            # seeds python/numpy/torch for reproducible runs
+    lstm_z: float = 1.96             # 95% band, matching the Holt-Winters convention
+    # Guards: attempt the LSTM only with enough data, else abstain -> Holt-Winters.
+    # Kept low enough that the LSTM also *attempts* the ~24-point monthly series,
+    # so the head-to-head backtest reports an honest number on both grains.
+    lstm_min_points: int = 16
+    lstm_min_windows: int = 4
 
     # --- CSV upload (bring-your-own-data) safety caps ---
     max_upload_mb: int = 25

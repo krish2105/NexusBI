@@ -1,0 +1,11 @@
+# Optional heavy-ML extras for the PyTorch LSTM forecasting variant.
+#
+# NOT installed by default: the zero-key deterministic path (Holt-Winters / OLS)
+# needs none of this, and the free-tier Docker image + CI stay torch-free. Install
+# only when you want to run FORECAST_BACKEND=lstm or the head-to-head backtest:
+#
+#     pip install -r requirements-ml.txt
+#
+# CPU-only torch keeps the install to a few hundred MB (no CUDA); pip resolves the
+# correct wheel per platform (macOS arm64, Linux x86_64, ...).
+torch>=2.2

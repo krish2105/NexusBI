@@ -166,32 +166,200 @@ def eval_text2sql() -> dict:
 # ---------------------------------------------------------------- forecast
 def eval_forecast() -> dict:
     pool = TargetPool()
-    rows = pool.execute("SELECT year_month, merchandise_value FROM monthly_kpis "
-                        "ORDER BY year_month LIMIT 10000").rows
-    labels = [r["year_month"] for r in rows]
-    values = [float(r["merchandise_value"]) for r in rows]
-    # Backtest: hold out the last 3 complete months.
-    from app.ml.forecasting import _trim_partial_periods
-    labels, values, _ = _trim_partial_periods(labels, values)
-    holdout = 3
-    train_v = values[:-holdout]
-    train_l = labels[:-holdout]
-    actual = values[-holdout:]
-    fc = forecast_series(train_l, train_v, horizon=holdout, min_points=6)
-    if not fc:
-        return {"suite": "forecast", "error": "insufficient points"}
-    preds = fc.point[:holdout]
-    mape = sum(abs((a - p) / a) for a, p in zip(actual, preds)) / holdout * 100
-    rmse = (sum((a - p) ** 2 for a, p in zip(actual, preds)) / holdout) ** 0.5
-    return {
+    # Head-to-head backtest across engines on BOTH grains. The monthly series is
+    # the long-standing primary (kept at the top level for backward compatibility
+    # with the Trust page); the daily series is where the LSTM has enough data to
+    # earn its keep. Every engine is backtested on the SAME train/test split with
+    # the same trimming, so the comparison is fair.
+    monthly = _backtest_series(pool, "monthly", holdout=3, min_points=6)
+    daily = _backtest_series(pool, "daily", holdout=14, min_points=6)
+
+    try:
+        import torch  # noqa: F401
+        torch_available = True
+    except Exception:  # noqa: BLE001
+        torch_available = False
+
+    # Reproducibility: the LSTM must be deterministic run-to-run or the report and
+    # any gate on it would be flaky. Verify on the daily series (where it trains).
+    lstm_reproducible = None
+    if torch_available:
+        from app.ml.demo_series import load_series
+        from app.ml.forecasting import _trim_partial_periods
+        from app.ml.lstm_forecast import _CACHE
+
+        dl, dv = load_series("daily", pool)
+        dl, dv, _ = _trim_partial_periods(dl, dv)
+        _CACHE.clear()
+        a = forecast_series(dl, dv, horizon=14, min_points=6, backend="lstm")
+        _CACHE.clear()  # force a real second training, not a cache hit
+        b = forecast_series(dl, dv, horizon=14, min_points=6, backend="lstm")
+        lstm_reproducible = bool(
+            a and b and "LSTM" in a.method
+            and (a.point, a.lower, a.upper) == (b.point, b.lower, b.upper))
+
+    # Backward-compatible top-level keys = monthly Holt-Winters primary (pooled
+    # over rolling-origin folds; the Trust page reads MAPE_pct/method).
+    hw = (monthly.get("methods", {}) or {}).get("holtwinters") or {}
+    out = {
         "suite": "forecast",
-        "method": fc.method,
-        "train_months": len(train_v),
-        "holdout_months": holdout,
-        "actual": [round(a, 2) for a in actual],
-        "predicted": [round(p, 2) for p in preds],
-        "MAPE_pct": round(mape, 2),
-        "RMSE": round(rmse, 2),
+        "method": hw.get("method", "Holt-Winters"),
+        "holdout_months": monthly.get("holdout"),
+        "origins": monthly.get("n_origins"),
+        "actual": (monthly.get("last_fold") or {}).get("actual", []),
+        "predicted": (monthly.get("last_fold") or {}).get("holtwinters", []),
+        "MAPE_pct": hw.get("mape_pct"),
+        "RMSE": hw.get("rmse"),
+        # Rich head-to-head comparison.
+        "torch_available": torch_available,
+        "lstm_reproducible": lstm_reproducible,
+        "forecast_backend": settings.forecast_backend,
+        "comparison": {"monthly": monthly, "daily": daily},
+        "note": ("Execution: seasonal-naive is the honest reference; a model must "
+                 "beat it to matter. MAPE masks zero-revenue days (daily has them); "
+                 "RMSE/MAE are always computed. LSTM only reports when it actually "
+                 "trained (torch present + series long enough), else it abstains."),
+    }
+    return out
+
+
+# -- backtest helpers --------------------------------------------------------
+def _rmse(actual: list[float], preds: list[float]) -> float | None:
+    n = len(actual)
+    return round((sum((a - p) ** 2 for a, p in zip(actual, preds)) / n) ** 0.5, 2) \
+        if n else None
+
+
+def _mae(actual: list[float], preds: list[float]) -> float | None:
+    n = len(actual)
+    return round(sum(abs(a - p) for a, p in zip(actual, preds)) / n, 2) if n else None
+
+
+def _masked_mape(actual: list[float], preds: list[float]) -> float | None:
+    """MAPE over non-zero actuals only (a daily series has zero-revenue days)."""
+    pairs = [(a, p) for a, p in zip(actual, preds) if a != 0]
+    if not pairs:
+        return None
+    return round(sum(abs((a - p) / a) for a, p in pairs) / len(pairs) * 100, 2)
+
+
+def _seasonal_naive(train: list[float], horizon: int, period: int) -> list[float]:
+    """Reference forecast: repeat the last full season (or last value if none)."""
+    m = period if period >= 2 and len(train) >= period else 1
+    return [train[-m + (i % m)] for i in range(horizon)]
+
+
+def _metrics(actual: list[float], preds: list[float], method: str, holdout: int,
+             lo: list[float] | None = None, hi: list[float] | None = None) -> dict:
+    """Pooled error metrics across the rolling-origin folds this method ran on.
+
+    ``folds`` is the number of folds that actually contributed (a method may run
+    on fewer folds than the series offers — e.g. the LSTM abstains on the short
+    early folds — so this is reported truthfully, not assumed). When prediction
+    bands are supplied, empirical 95% coverage is measured so the band is audited,
+    not merely asserted."""
+    out = {
+        "method": method,
+        "folds": len(preds) // holdout if holdout else 0,
+        "mape_pct": _masked_mape(actual, preds),
+        "rmse": _rmse(actual, preds),
+        "mae": _mae(actual, preds),
+    }
+    if lo and hi and len(lo) == len(actual) == len(hi) and actual:
+        inside = sum(1 for a, l, h in zip(actual, lo, hi) if l <= a <= h)
+        out["band_coverage_95"] = round(inside / len(actual), 3)
+        out["band_width_mean"] = round(sum(h - l for l, h in zip(lo, hi)) / len(lo), 2)
+    return out
+
+
+def _backtest_series(pool: TargetPool, grain: str, holdout: int, min_points: int,
+                     n_origins: int = 6) -> dict:
+    """Rolling-origin (walk-forward) backtest — the honest way to compare models
+    on a short series. Each method is refit at several non-overlapping origins and
+    its errors are POOLED, so a single lucky/unlucky split can't decide the winner.
+    """
+    from app.ml.demo_series import load_series
+    from app.ml.forecasting import _seasonal_periods, _trim_partial_periods
+
+    labels, values = load_series(grain, pool)
+    labels, values, _ = _trim_partial_periods(labels, values)
+    n = len(values)
+    min_train = holdout + min_points
+    if n <= min_train:
+        return {"grain": grain, "error": "insufficient points", "points": n}
+
+    # Non-overlapping origins walking backwards from the end.
+    origins: list[int] = []
+    o = n - holdout
+    while len(origins) < n_origins and o >= min_train:
+        origins.append(o)
+        o -= holdout
+    origins.reverse()
+
+    names = ("seasonal_naive", "holtwinters", "lstm")
+    pooled: dict[str, dict[str, list]] = {
+        k: {"pred": [], "act": [], "lo": [], "hi": []} for k in names}
+    labels_seen: dict[str, str] = {}
+    lstm_ran = False
+    last_display: dict[str, list] = {}
+
+    for origin in origins:
+        tr_l, tr_v = labels[:origin], values[:origin]
+        actual = values[origin:origin + holdout]
+        period = _seasonal_periods(tr_l)
+
+        sn = _seasonal_naive(tr_v, holdout, period)
+        pooled["seasonal_naive"]["pred"] += sn
+        pooled["seasonal_naive"]["act"] += actual
+        labels_seen["seasonal_naive"] = "Seasonal-naive"
+
+        fc_hw = forecast_series(tr_l, tr_v, horizon=holdout,
+                                min_points=min_points, backend="holtwinters")
+        if fc_hw:
+            pooled["holtwinters"]["pred"] += fc_hw.point[:holdout]
+            pooled["holtwinters"]["act"] += actual
+            pooled["holtwinters"]["lo"] += fc_hw.lower[:holdout]
+            pooled["holtwinters"]["hi"] += fc_hw.upper[:holdout]
+            labels_seen["holtwinters"] = fc_hw.method
+
+        fc_lstm = forecast_series(tr_l, tr_v, horizon=holdout,
+                                  min_points=min_points, backend="lstm")
+        if fc_lstm and "LSTM" in fc_lstm.method:
+            pooled["lstm"]["pred"] += fc_lstm.point[:holdout]
+            pooled["lstm"]["act"] += actual
+            pooled["lstm"]["lo"] += fc_lstm.lower[:holdout]
+            pooled["lstm"]["hi"] += fc_lstm.upper[:holdout]
+            labels_seen["lstm"] = fc_lstm.method
+            lstm_ran = True
+
+        if origin == origins[-1]:  # most recent fold, for the chart/backward-compat
+            last_display = {"actual": [round(a, 2) for a in actual],
+                            "holtwinters": [round(p, 2) for p in
+                                            (fc_hw.point[:holdout] if fc_hw else [])],
+                            "lstm": [round(p, 2) for p in
+                                     (fc_lstm.point[:holdout]
+                                      if fc_lstm and "LSTM" in fc_lstm.method else [])]}
+
+    methods: dict[str, dict | None] = {}
+    for name in names:
+        d = pooled[name]
+        methods[name] = (
+            _metrics(d["act"], d["pred"], labels_seen[name], holdout,
+                     lo=d["lo"] or None, hi=d["hi"] or None)
+            if d["pred"] and (name != "lstm" or lstm_ran) else None)
+
+    scored = {k: v for k, v in methods.items() if v and v.get("rmse") is not None}
+    best = min(scored, key=lambda k: scored[k]["rmse"]) if scored else None
+    return {
+        "grain": grain,
+        "points": n,
+        "holdout": holdout,
+        "n_origins": len(origins),
+        "seasonal_period": _seasonal_periods(labels),
+        "eval": "rolling-origin (walk-forward), errors pooled across folds",
+        "last_fold": last_display,
+        "methods": methods,
+        "best": best,
     }
 
 
@@ -297,6 +465,20 @@ def main(gate: bool = False) -> None:
                  f"{'+' if delta >= 0 else ''}{delta:.0f} points")
     print(f"FORECAST  : {f.get('method')} MAPE={f.get('MAPE_pct')}% "
           f"RMSE={f.get('RMSE')}")
+    for grain, cmp in (f.get("comparison") or {}).items():
+        if cmp.get("error"):
+            print(f"            [{grain}] {cmp['error']} ({cmp.get('points')} pts)")
+            continue
+        parts = []
+        for name in ("seasonal_naive", "holtwinters", "lstm"):
+            mv = (cmp.get("methods") or {}).get(name)
+            if mv and mv.get("rmse") is not None:
+                parts.append(f"{name}=RMSE {mv['rmse']:,.0f}")
+            elif name == "lstm":
+                parts.append("lstm=abstained")
+        print(f"            [{grain}, {cmp.get('points')}pt/"
+              f"{cmp.get('n_origins')}folds x{cmp.get('holdout')}] " + ", ".join(parts)
+              + (f"  → best: {cmp.get('best')}" if cmp.get("best") else ""))
     print(f"RAG       : table recall {r['table_recall']*100:.0f}%, "
           f"fully-grounded {r['questions_fully_grounded']}/{r['graded']}")
     sp_acc = sp.get("execution_accuracy")

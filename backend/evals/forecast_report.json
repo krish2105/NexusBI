@@ -1,18 +1,163 @@
 {
   "suite": "forecast",
   "method": "Holt-Winters (add trend)",
-  "train_months": 17,
   "holdout_months": 3,
+  "origins": 3,
   "actual": [
     865124.31,
     895507.22,
     854686.33
   ],
   "predicted": [
-    1091233.69,
-    1138948.24,
-    1186185.66
+    1090376.08,
+    1133484.89,
+    1175729.95
   ],
-  "MAPE_pct": 30.7,
-  "RMSE": 270974.04
+  "MAPE_pct": 15.43,
+  "RMSE": 167294.69,
+  "torch_available": true,
+  "lstm_reproducible": true,
+  "forecast_backend": "holtwinters",
+  "comparison": {
+    "monthly": {
+      "grain": "monthly",
+      "points": 20,
+      "holdout": 3,
+      "n_origins": 3,
+      "seasonal_period": 12,
+      "eval": "rolling-origin (walk-forward), errors pooled across folds",
+      "last_fold": {
+        "actual": [
+          865124.31,
+          895507.22,
+          854686.33
+        ],
+        "holtwinters": [
+          1090376.08,
+          1133484.89,
+          1175729.95
+        ],
+        "lstm": [
+          896899.62,
+          1114317.75,
+          867054.5
+        ]
+      },
+      "methods": {
+        "seasonal_naive": {
+          "method": "Seasonal-naive",
+          "folds": 3,
+          "mape_pct": 40.45,
+          "rmse": 413967.27,
+          "mae": 371000.35
+        },
+        "holtwinters": {
+          "method": "Holt-Winters (add trend)",
+          "folds": 3,
+          "mape_pct": 15.43,
+          "rmse": 167294.69,
+          "mae": 134162.44,
+          "band_coverage_95": 0.667,
+          "band_width_mean": 471240.29
+        },
+        "lstm": {
+          "method": "LSTM (PyTorch, 1x32, lookback=5)",
+          "folds": 1,
+          "mape_pct": 9.85,
+          "rmse": 127854.98,
+          "mae": 87651.34,
+          "band_coverage_95": 0.667,
+          "band_width_mean": 91177.84
+        }
+      },
+      "best": "lstm"
+    },
+    "daily": {
+      "grain": "daily",
+      "points": 694,
+      "holdout": 14,
+      "n_origins": 6,
+      "seasonal_period": 7,
+      "eval": "rolling-origin (walk-forward), errors pooled across folds",
+      "last_fold": {
+        "actual": [
+          45574.04,
+          35670.61,
+          31730.67,
+          24340.95,
+          25487.39,
+          34479.5,
+          26323.06,
+          20297.13,
+          17030.87,
+          9633.61,
+          10599.41,
+          8070.71,
+          5345.91,
+          3673.91
+        ],
+        "holtwinters": [
+          40018.98,
+          38672.38,
+          35503.75,
+          29452.53,
+          32447.21,
+          42718.91,
+          40921.93,
+          40018.98,
+          38672.38,
+          35503.75,
+          29452.53,
+          32447.21,
+          42718.91,
+          40921.93
+        ],
+        "lstm": [
+          37497.84,
+          33734.23,
+          29401.82,
+          26884.3,
+          28437.76,
+          31582.58,
+          34583.09,
+          36051.35,
+          32883.25,
+          28402.07,
+          26470.46,
+          25893.38,
+          29880.58,
+          33424.81
+        ]
+      },
+      "methods": {
+        "seasonal_naive": {
+          "method": "Seasonal-naive",
+          "folds": 6,
+          "mape_pct": 51.94,
+          "rmse": 11101.32,
+          "mae": 8076.84
+        },
+        "holtwinters": {
+          "method": "Holt-Winters (add trend, add seasonal)",
+          "folds": 6,
+          "mape_pct": 49.49,
+          "rmse": 10186.58,
+          "mae": 7266.92,
+          "band_coverage_95": 1.0,
+          "band_width_mean": 61556.42
+        },
+        "lstm": {
+          "method": "LSTM (PyTorch, 1x32, lookback=28)",
+          "folds": 6,
+          "mape_pct": 43.37,
+          "rmse": 9748.67,
+          "mae": 7691.56,
+          "band_coverage_95": 0.94,
+          "band_width_mean": 32654.53
+        }
+      },
+      "best": "lstm"
+    }
+  },
+  "note": "Execution: seasonal-naive is the honest reference; a model must beat it to matter. MAPE masks zero-revenue days (daily has them); RMSE/MAE are always computed. LSTM only reports when it actually trained (torch present + series long enough), else it abstains."
 }

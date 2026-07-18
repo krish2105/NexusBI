@@ -115,6 +115,7 @@ def generate_briefing(url: str | None = None, connection_id: str = "demo") -> di
             "direction": direction, "sentiment": sentiment,
             "anomaly": anomaly, "spark": [round(v, 2) for v in spark],
             "forecast_next": round(forecast_next, 2) if forecast_next else None,
+            "forecast_method": fc.method if fc else None,
             "period_label": _period_label(labels[-1]),
         })
         significance = abs(mom) + (60 if anomaly else 0)
@@ -175,9 +176,10 @@ def generate_briefing(url: str | None = None, connection_id: str = "demo") -> di
     rev = next((m for m in metrics_out if m["column"] == "merchandise_value"), None)
     forecast_outlook = None
     if rev and rev["forecast_next"]:
+        model = (rev.get("forecast_method") or "Holt-Winters").split(" (")[0]
         forecast_outlook = (f"Merchandise revenue is projected at "
                             f"{_fmt(rev['forecast_next'], 'R$')} next period "
-                            f"(Holt-Winters).")
+                            f"({model}).")
 
     return {
         "available": True, "connection_id": connection_id, "as_of": as_of,

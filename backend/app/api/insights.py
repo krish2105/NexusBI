@@ -52,6 +52,32 @@ def feedback_stats():
 
 
 # --- Trust Center -----------------------------------------------------------
+def _forecast_summary(forecast: dict) -> dict:
+    """Compact forecast head-to-head for the Trust page: per grain, the engines'
+    RMSE and the winner, plus whether the LSTM variant is present + reproducible."""
+    comparison = forecast.get("comparison", {}) if isinstance(forecast, dict) else {}
+    grains = {}
+    for grain, cmp in comparison.items():
+        if not isinstance(cmp, dict) or cmp.get("error"):
+            continue
+        engines = {}
+        for name, m in (cmp.get("methods") or {}).items():
+            engines[name] = None if not m else {
+                "rmse": m.get("rmse"), "mape_pct": m.get("mape_pct"),
+                "folds": m.get("folds"),
+                "band_coverage_95": m.get("band_coverage_95"),
+            }
+        grains[grain] = {"best": cmp.get("best"), "n_origins": cmp.get("n_origins"),
+                         "holdout": cmp.get("holdout"), "engines": engines}
+    return {
+        "eval": "rolling-origin walk-forward, errors pooled across folds",
+        "torch_available": forecast.get("torch_available"),
+        "lstm_reproducible": forecast.get("lstm_reproducible"),
+        "backend": forecast.get("forecast_backend"),
+        "grains": grains,
+    }
+
+
 @router.get("/trust/summary")
 def trust_summary():
     """Everything that makes Nexus trustworthy, in one payload."""
@@ -84,6 +110,7 @@ def trust_summary():
             "spider_dataset": spider.get("dataset_format"),
             "spider_generator_mode": spider.get("generator_mode"),
         },
+        "forecast": _forecast_summary(forecast),
         "governance": {
             "queries_executed": executed,
             "queries_blocked": blocked,

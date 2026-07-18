@@ -91,6 +91,9 @@ class Settings(BaseSettings):
     demo_target_url: str = Field(default=f"sqlite:///{VAR_DIR / 'nexus_demo.db'}")
     target_statement_timeout_s: int = 8
     target_row_cap: int = 10_000
+    # Pool size per Postgres target DSN (amortizes connection setup under load).
+    # Read-only characteristics are re-asserted on every checkout.
+    target_pg_pool_max: int = 8
 
     # --- LLM (all optional; free tier only) ---
     groq_api_key: str | None = None

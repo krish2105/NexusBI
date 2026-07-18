@@ -24,13 +24,54 @@ DSN forms:
 from __future__ import annotations
 
 import sqlite3
+import threading
 import time
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any
 from urllib.parse import unquote, urlparse
 
 from app.config import settings
+
+# One connection pool per Postgres DSN, shared across TargetPool instances so we
+# amortize connection setup instead of dialing a fresh socket per query. SQLite
+# (file), MySQL (pymysql) and BigQuery (stateless jobs) don't use this.
+# Each pool is paired with a semaphore sized to maxconn: psycopg2's pool *raises*
+# when exhausted, so the semaphore makes the (maxconn+1)th concurrent caller
+# BLOCK for a free slot (bounded queueing) instead of failing the query.
+_PG_POOLS: dict[str, tuple[Any, threading.Semaphore]] = {}
+_PG_POOL_LOCK = threading.Lock()
+
+
+def _get_pg_pool(dsn: str) -> tuple[Any, threading.Semaphore]:
+    entry = _PG_POOLS.get(dsn)
+    if entry is None:
+        with _PG_POOL_LOCK:
+            entry = _PG_POOLS.get(dsn)
+            if entry is None:
+                from psycopg2.pool import ThreadedConnectionPool
+
+                # Fixed-size pool (minconn == maxconn): psycopg2's pool only keeps
+                # `minconn` connections idle and CLOSES any returned beyond that,
+                # so a min<max pool churns connections under load and defeats the
+                # point. Equal min/max keeps every connection for reuse.
+                maxconn = max(2, settings.target_pg_pool_max)
+                pool = ThreadedConnectionPool(maxconn, maxconn, dsn)
+                entry = (pool, threading.Semaphore(maxconn))
+                _PG_POOLS[dsn] = entry
+    return entry
+
+
+def reset_pg_pools() -> None:
+    """Close + drop all target Postgres pools (test cleanup / redeploy)."""
+    with _PG_POOL_LOCK:
+        for pool, _sem in _PG_POOLS.values():
+            try:
+                pool.closeall()
+            except Exception:  # noqa: BLE001
+                pass
+        _PG_POOLS.clear()
 
 # DSN scheme -> sqlglot dialect name (also our internal kind).
 _SCHEME_DIALECT = {
@@ -317,15 +358,36 @@ class TargetPool:
         return self._pack(cols, fetched, t0, "bigquery", [], as_dict=False)
 
     # -- postgres internals --------------------------------------------------
+    @contextmanager
     def _pg_conn(self):  # pragma: no cover - requires a live server
-        import psycopg2
-
-        con = psycopg2.connect(self.url)
-        con.set_session(readonly=True, autocommit=False)
-        cur = con.cursor()
-        cur.execute("SET default_transaction_read_only = on")
-        cur.execute(f"SET statement_timeout = '{self.statement_timeout_s}s'")
-        return con
+        """A pooled, read-only Postgres connection. Borrowed from the per-DSN
+        pool, its read-only characteristics re-asserted on every checkout (a
+        pooled connection may have been used by a prior request), and returned —
+        not closed — on exit. Rolls back around use so no transaction state
+        leaks between borrowers (safe: every query here is read-only)."""
+        pool, sem = _get_pg_pool(self.url)
+        # Block for a free slot rather than error on a burst; cap the wait so a
+        # saturated pool returns a clean "busy" instead of hanging forever.
+        if not sem.acquire(timeout=self.statement_timeout_s + 2):
+            raise ReadOnlyExecutionError("target database is busy (pool saturated)")
+        con = pool.getconn()
+        try:
+            con.rollback()                       # clear any leftover tx state
+            con.set_session(readonly=True, autocommit=False)
+            cur = con.cursor()
+            cur.execute("SET default_transaction_read_only = on")
+            cur.execute(f"SET statement_timeout = '{self.statement_timeout_s}s'")
+            yield con
+            con.rollback()
+        except Exception:
+            try:
+                con.rollback()
+            except Exception:  # noqa: BLE001
+                pass
+            raise
+        finally:
+            pool.putconn(con)
+            sem.release()
 
     def _execute_pg(self, sql: str) -> ExecResult:  # pragma: no cover
         t0 = time.perf_counter()

@@ -39,9 +39,14 @@ langchain-core==1.4.9
 # --- Testing ---
 pytest==9.1.1
 httpx==0.28.1              # FastAPI TestClient
+fakeredis==2.36.2          # in-memory Redis for the Redis-path tests (no server)
 
 groq==1.5.0                # free-tier hosted LLM (Tier 1: LLM path)
 langfuse==4.14.0           # free-tier tracing (Tier 1: observability)
+
+# --- Phase 3: shared state for horizontal scale (Upstash free tier). Optional at
+#     runtime — unset REDIS_URL falls back to an in-process limiter/cache. ---
+redis==5.2.1               # distributed rate limiter + allow-list cache
 
 # --- Durable app-metadata store ---
 # Postgres driver for the app DB. Local dev defaults to SQLite (no driver needed),

@@ -93,8 +93,10 @@ the wrong database, on a floating dependency, defending a moat two lines of SQL 
    Verified by a multi-tenant test suite (tenant B blocked from A's resources; 158 tests pass).
 4. **No legal / compliance surface.** No ToS/Privacy/DPA; query payloads cache PII as plaintext
    JSON at rest; audit log non-durable — a hard B2B blocker.
-5. **Stranger-facing credibility gaps.** Mobile nav completely broken (6 of 8 routes unreachable
-   on phones); no login/account shell; ~49% accuracy on hard joins; no design partners.
+5. **Stranger-facing credibility gaps** — *partially fixed.* ✅ Mobile nav (hamburger + drawer, all
+   routes reachable), ✅ route-level `error.tsx`/`loading.tsx`/`not-found.tsx`, ✅ skeletons + visible
+   error/retry states replacing silent `.catch` (verified in-browser). Still open: no login/account
+   shell; ~49% accuracy on hard joins; no design partners.
 
 **The 5 highest-leverage moves**
 

@@ -8,7 +8,7 @@ from __future__ import annotations
 from functools import lru_cache
 
 from app.db.target_pool import TargetPool
-from app.sqlsafety.policy import AllowList
+from app.sqlsafety import AllowList
 
 
 def build_allow_list(pool: TargetPool | None = None) -> AllowList:

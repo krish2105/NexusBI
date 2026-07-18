@@ -6,7 +6,7 @@ independent of the NL screen.
 import pytest
 
 from app.sqlsafety.guard import validate_sql
-from app.sqlsafety.validator import validate_ast
+from app.sqlsafety import validate_ast
 
 # (label, sql) pairs that MUST be blocked by AST validation (Layer 2).
 BLOCKED_SQL = [
@@ -80,3 +80,43 @@ def test_valid_join_with_output_alias_passes(allow_list):
     r = validate_sql(sql, allow_list)
     assert r.verdict == "ALLOW", r.errors
     assert set(r.tables_used) == {"order_items", "products", "categories"}
+
+
+# --------------------------------------------------------------- dogfooding
+def test_safety_rules_come_from_the_published_sqlguard_package():
+    """Nexus must consume the `sqlguard` package it publishes, not a vendored
+    copy of the same code.
+
+    Two copies of the safety rules is the failure mode this guards against: they
+    drift, and the library users `pip install` stops being the one that actually
+    defends this app. If someone re-vendors the implementation into
+    `app/sqlsafety/`, this fails.
+    """
+    import inspect
+
+    from app.sqlsafety import enforce_policy, screen_question, validate_ast
+
+    for fn in (validate_ast, enforce_policy, screen_question):
+        module = inspect.getmodule(fn)
+        assert module is not None and module.__name__.startswith("sqlguard."), (
+            f"{fn.__name__} resolves to {module.__name__ if module else '?'} — "
+            "the safety rules must come from the sqlguard package"
+        )
+
+
+def test_app_adapter_applies_nexus_layer_labels(allow_list):
+    """The adapter's job: keep Nexus's documented L2/L3 numbering on top of the
+    library's generic labels (audit entries + Trust page cite them)."""
+    ast_block = validate_sql("DROP TABLE orders", allow_list)
+    assert ast_block.layer == "AST validation (L2)"
+    policy_block = validate_sql("SELECT salary FROM employee_payroll", allow_list)
+    assert policy_block.layer == "allow-list policy (L3)"
+
+
+def test_app_adapter_applies_configured_row_cap(allow_list):
+    """The library defaults to its own row limit; Nexus must inject its own
+    configured cap (settings.target_row_cap)."""
+    from app.config import settings
+
+    r = validate_sql("SELECT order_id FROM orders", allow_list)
+    assert r.limit_applied == settings.target_row_cap

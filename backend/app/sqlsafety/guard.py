@@ -1,38 +1,48 @@
-"""Composition of the safety layers into the interfaces the agent graph calls.
+"""Nexus's binding to the `sqlguard` package — the safety guard we publish.
+
+The guard's *implementation* (AST validation, allow-list + LIMIT policy, NL input
+screen) lives in **sqlguard** (github.com/krish2105/sqlguard), pinned in
+requirements.txt. Nexus deliberately consumes that published artifact rather than
+keeping a second copy of the safety code, so the library and the product can
+never drift — the guard shipped to users is byte-for-byte the guard defending
+this app.
+
+This module is the thin app-specific adapter over it, and only does what an
+adapter should:
+
+  * applies Nexus's configured row cap (``settings.target_row_cap``) where the
+    library takes a generic ``row_limit``;
+  * defaults the execution dialect to the demo's SQLite (the library defaults to
+    the source dialect, which is right for a general-purpose library but not for
+    this app);
+  * labels blocks with Nexus's documented layer numbering (L2 = AST, L3 =
+    allow-list; L1 read-only connection and L5 dry-run EXPLAIN are enforced
+    outside the library, by target_pool.py and the agent graph).
+
+Entry points used by the app:
 
     screen_question(question, allow_list)  -> ScreenResult   (Layer 4, pre-LLM)
     validate_sql(sql, allow_list, ...)     -> SafetyReport    (Layers 2+3, post-LLM)
-
-The graph's ``sql_validator`` node calls ``validate_sql``; on BLOCK it feeds the
-structured errors back to ``sql_generator`` for a capped repair (Layer 5), and
-never lets unvalidated SQL reach the executor.
 """
 from __future__ import annotations
 
-from dataclasses import dataclass, field
+from sqlguard import GuardReport as SafetyReport  # identical shape; Nexus's name
+from sqlguard import ScreenResult, screen_question
+from sqlguard import validate_sql as _guard_validate_sql
+from sqlguard.policy import AllowList, PolicyResult
+from sqlguard.validator import ValidationResult
 
 from app.config import settings
-from app.sqlsafety.policy import AllowList, PolicyResult, enforce_policy
-from app.sqlsafety.sanitizer import ScreenResult, screen_question
-from app.sqlsafety.validator import ValidationResult, validate_ast
 
-__all__ = ["SafetyReport", "ScreenResult", "screen_question", "validate_sql"]
+__all__ = ["SafetyReport", "ScreenResult", "screen_question", "validate_sql",
+           "AllowList", "PolicyResult", "ValidationResult"]
 
-
-@dataclass
-class SafetyReport:
-    verdict: str                                  # "ALLOW" | "BLOCK"
-    safe_sql: str | None = None                   # LIMIT-enforced SQL to execute
-    errors: list[str] = field(default_factory=list)
-    tables_used: list[str] = field(default_factory=list)
-    limit_applied: int | None = None
-    layer: str | None = None                      # which layer produced a BLOCK
-    validation: ValidationResult | None = None
-    policy: PolicyResult | None = None
-
-    @property
-    def allowed(self) -> bool:
-        return self.verdict == "ALLOW"
+# Nexus's layer numbering (see docs/SQL_SAFETY.md) mapped onto the library's
+# generic labels, so audit entries and the Trust page keep citing L2/L3.
+_LAYER_LABELS = {
+    "AST validation": "AST validation (L2)",
+    "allow-list policy": "allow-list policy (L3)",
+}
 
 
 def validate_sql(sql: str, allow_list: AllowList,
@@ -41,22 +51,16 @@ def validate_sql(sql: str, allow_list: AllowList,
                  row_cap: int | None = None) -> SafetyReport:
     """Run Layers 2 (AST) then 3 (allow-list + LIMIT) on generated SQL.
 
-    ``source_dialect`` is what the LLM writes in; ``target_dialect`` is the engine
-    we execute against (the SQLite demo transpiles cleanly from Postgres SQL).
+    ``source_dialect`` is what the generator writes in; ``target_dialect`` is the
+    engine we execute against (the SQLite demo transpiles cleanly from Postgres
+    SQL). Thin wrapper over :func:`sqlguard.validate_sql`.
     """
-    row_cap = row_cap or settings.target_row_cap
-
-    v = validate_ast(sql, dialect=source_dialect)
-    if not v.valid:
-        return SafetyReport(verdict="BLOCK", errors=v.errors, layer="AST validation (L2)",
-                            validation=v)
-
-    p = enforce_policy(v.ast, allow_list, row_cap=row_cap, target_dialect=target_dialect)
-    if not p.ok:
-        return SafetyReport(verdict="BLOCK", errors=p.errors,
-                            layer="allow-list policy (L3)", validation=v, policy=p)
-
-    return SafetyReport(
-        verdict="ALLOW", safe_sql=p.safe_sql, tables_used=p.tables_used,
-        limit_applied=p.limit_applied, validation=v, policy=p,
+    report = _guard_validate_sql(
+        sql, allow_list,
+        source_dialect=source_dialect,
+        target_dialect=target_dialect,
+        row_limit=row_cap or settings.target_row_cap,
     )
+    if report.layer in _LAYER_LABELS:
+        report.layer = _LAYER_LABELS[report.layer]
+    return report

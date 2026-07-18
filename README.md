@@ -64,6 +64,13 @@ set** (same eval, run in its own CI across Python 3.10–3.13), ships a CLI
 PyPI. See the [standalone repo](https://github.com/krish2105/sqlguard) or
 [`packages/sqlguard/README.md`](packages/sqlguard/README.md).
 
+**Nexus dogfoods it.** `sqlguard` isn't a copy carved off for show — it's pinned
+in `backend/requirements.txt` and *is* the guard defending this app. There is one
+implementation of the safety rules, and it's the one you `pip install`;
+`app/sqlsafety/` is a ~40-line adapter that only applies Nexus's row cap,
+execution dialect, and layer labels. A test asserts the rules resolve to the
+installed package, so the two can never silently drift.
+
 ## Measured results (`make eval`)
 
 | Suite | Result |
@@ -73,7 +80,7 @@ PyPI. See the [standalone repo](https://github.com/krish2105/sqlguard) or
 | **Spider/BIRD** | end-to-end **execution-accuracy** benchmark (the standard text-to-SQL metric) — runs the whole pipeline, safety gate included, per-database; bundled self-contained fixture + a loader for the full Spider/BIRD dev sets. See [`docs/SPIDER_BIRD.md`](docs/SPIDER_BIRD.md) |
 | **Forecast** | **rolling-origin (walk-forward) head-to-head** vs a seasonal-naive reference on daily + monthly grains; RMSE/MAE, zero-masked MAPE, and measured 95% band coverage. Optional PyTorch **LSTM** variant beats Holt-Winters on the ~700-pt daily series (RMSE 9.7k vs 10.2k, ~94% band coverage vs an over-wide 100%). See [`docs/FORECASTING.md`](docs/FORECASTING.md) |
 | **RAG** | ~85% table recall on the labeled question set |
-| **Tests** | `180 passed, 6 skipped (live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting, semantic layer, join-graph generalization, determinism |
+| **Tests** | `183 passed, 6 skipped (live-MySQL, skipped in CI)` — safety rules, read-only enforcement, graph, API, hardening, benchmark, forecasting, semantic layer, join-graph generalization, determinism, dogfooding |
 | **CI** | GitHub Actions runs tests **and fails the build if the safety block rate drops below 100%** |
 
 ## Quickstart — runs in ~1 minute, no keys, no Postgres

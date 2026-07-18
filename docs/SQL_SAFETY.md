@@ -6,6 +6,8 @@
 
 A generated query must clear **all five layers** before a single row is read. Each layer is independent, so a bypass of one is caught by the next.
 
+**Where the code lives.** Layers 2–4 are pure, database-independent rules, so they live in **[`sqlguard`](https://github.com/krish2105/sqlguard)** — our MIT-licensed OSS package, pinned in `backend/requirements.txt`. Nexus *dogfoods* it: the guard defending this app is the same artifact anyone `pip install`s, so there is exactly one implementation and no chance of drift (a test asserts the rules resolve to the installed package). Layers 1 and 5 need a live connection, so they stay in the app. `app/sqlsafety/` is a thin adapter that applies Nexus's row cap, execution dialect, and the L2/L3 labels used below.
+
 ---
 
 ## Layer 1 — Read-only by construction  ·  `app/db/target_pool.py`
@@ -17,7 +19,7 @@ The ultimate backstop: even if every other layer failed, the engine itself refus
 
 Verified test: `DELETE FROM orders` raises `ReadOnlyExecutionError` at the engine.
 
-## Layer 2 — AST validation  ·  `app/sqlsafety/validator.py`
+## Layer 2 — AST validation  ·  `sqlguard.validator`
 
 Deterministic, no LLM. The SQL is parsed with **`sqlglot`** and **rejected unless proven safe**:
 
@@ -29,7 +31,7 @@ Deterministic, no LLM. The SQL is parsed with **`sqlglot`** and **rejected unles
 
 Case obfuscation (`dRoP tAbLe`) is normalized away by the parser before checks run.
 
-## Layer 3 — Allow-list + limits  ·  `app/sqlsafety/policy.py`
+## Layer 3 — Allow-list + limits  ·  `sqlguard.policy`
 
 The allow-list is built from the **live introspected schema** on connect (`app/db/introspect.py`), so it always matches reality.
 
@@ -38,7 +40,7 @@ The allow-list is built from the **live introspected schema** on connect (`app/d
 - A **`LIMIT`** is injected if absent and clamped to the row cap (10,000) if too large.
 - Execution enforces a **statement timeout** and **result-size cap**.
 
-## Layer 4 — NL-input injection defense  ·  `app/sqlsafety/sanitizer.py`
+## Layer 4 — NL-input injection defense  ·  `sqlguard.sanitizer`
 
 The *question itself* is untrusted and is screened **before** it reaches the generator. Deterministic, explainable intent rules cover: prompt-injection ("ignore your instructions", "developer mode", "reveal the system prompt"), destructive intent, system-catalog probing, dangerous functions, credential/exfiltration requests, tenant-escape, and resource-abuse / unbounded scans. The screen is **allow-list-aware**, so it flags probes for tables/columns that don't exist without blocking legitimate questions. The generator prompt also structurally delimits schema/instructions from the user question so injected text can't override the system contract.
 

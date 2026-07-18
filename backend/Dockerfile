@@ -6,9 +6,11 @@ FROM python:3.11-slim
 ENV PYTHONUNBUFFERED=1 PYTHONDONTWRITEBYTECODE=1
 WORKDIR /app
 
-# System deps for scientific wheels (numpy/scipy/statsmodels/sklearn).
+# build-essential/libgomp1: scientific wheels (numpy/scipy/statsmodels/sklearn).
+# git: requirements.txt installs `sqlguard` from a pinned git tag (our own OSS
+# safety guard) — slim images ship no git, so pip would fail without this.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    build-essential libgomp1 && rm -rf /var/lib/apt/lists/*
+    build-essential libgomp1 git && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt

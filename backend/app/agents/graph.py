@@ -179,7 +179,7 @@ def run_analysis(question: str, connection_id: str = "demo",
 
         yield emit(_event("sql_validator", "running", label="Validating (safety gate)"))
         report = validate_sql(gen["sql"], allow, source_dialect="postgres",
-                              target_dialect="sqlite")
+                              target_dialect=pool.sqlglot_dialect)
         if report.allowed:
             # Layer 5: dry-run EXPLAIN before committing to execution.
             try:

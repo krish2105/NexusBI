@@ -28,7 +28,11 @@ httpx>=0.27              # FastAPI TestClient
 groq>=0.11                # free-tier hosted LLM (Tier 1: LLM path)
 langfuse>=2.60            # free-tier tracing (Tier 1: observability)
 
+# --- Optional target-DB drivers (multi-dialect; install what you connect to) ---
+# psycopg2-binary>=2.9       # Postgres target
+# pymysql>=1.1               # MySQL / MariaDB target
+# google-cloud-bigquery>=3.0 # BigQuery target
+
 # --- Optional upgrades (uncomment as needed; all free) ---
 # sentence-transformers>=2.7   # local bge-small embeddings (no API key)
-# psycopg2-binary>=2.9   # Postgres production target/app DB
 # statsforecast>=1.7     # AutoARIMA forecasting

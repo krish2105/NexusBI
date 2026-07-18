@@ -27,11 +27,15 @@ from app.db.target_pool import ReadOnlyExecutionError, TargetPool
 # NB: the probe table name must NOT contain the substring "readonly", or a
 # "relation ... does not exist" error would falsely match the read-only regex.
 _PROBE = "INSERT INTO _nexus_wcheck_zzz (x) VALUES (1)"
+# Covers Postgres, MySQL/MariaDB ("command denied to user", "access denied"),
+# SQLite. A read-only ROLE refuses the write; a writable role only fails because
+# the probe table is absent.
 _READONLY_SIGNS = re.compile(
-    r"read[- ]?only|permission denied|not allowed|cannot execute .* in a read-only",
-    re.I)
+    r"read[- ]?only|permission denied|access denied|command denied|not allowed|"
+    r"cannot execute .* in a read-only", re.I)
 _MISSING_SIGNS = re.compile(
-    r"no such table|does not exist|relation .* does not exist|unknown", re.I)
+    r"no such table|does(n'?t| not) exist|relation .* does not exist|"
+    r"unknown table|table .* doesn'?t exist", re.I)
 
 
 @dataclass
@@ -97,10 +101,39 @@ def verify_read_only(url: str) -> ConnCheck:
         # our access cannot write regardless of file permissions (Layer 1).
         return ConnCheck(True, "read-only enforced by pool (sqlite mode=ro)",
                          is_readonly=True)
+    if pool.dialect == "bigquery":  # pragma: no cover - cloud service
+        # BigQuery SELECT jobs cannot mutate; a non-SELECT never survives the AST
+        # layer. Read-only is a property of the job, not a role.
+        return ConnCheck(True, "read-only by job type (BigQuery SELECT jobs)",
+                         is_readonly=True)
+    if pool.dialect == "mysql":  # pragma: no cover - needs live MySQL
+        return _verify_mysql_role(url)
 
     # Postgres: probe the caller's ROLE directly (raw connection, no forced
     # read-only transaction) so a writable role is detected and rejected.
     return _verify_pg_role(url)
+
+
+def _verify_mysql_role(url: str) -> ConnCheck:  # pragma: no cover - needs live MySQL
+    from urllib.parse import unquote, urlparse
+
+    import pymysql
+
+    p = urlparse(url)
+    try:
+        con = pymysql.connect(
+            host=p.hostname or "localhost", port=p.port or 3306,
+            user=unquote(p.username or ""), password=unquote(p.password or ""),
+            database=(p.path or "/").lstrip("/") or None, autocommit=True)
+    except Exception as e:  # noqa: BLE001
+        return ConnCheck(False, f"could not connect to verify role: {str(e)[:120]}")
+    try:
+        con.cursor().execute(_PROBE)
+        return ConnCheck(False, "role accepted a write — NOT read-only, rejected")
+    except Exception as e:  # noqa: BLE001
+        return classify_probe_error(str(e))
+    finally:
+        con.close()
 
 
 def _verify_pg_role(url: str) -> ConnCheck:  # pragma: no cover - needs live Postgres

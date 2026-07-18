@@ -11,8 +11,9 @@ import {
   Upload,
   Loader2,
   ArrowRight,
+  Plug,
 } from "lucide-react";
-import { getSchema, getEvals, uploadCsv } from "@/lib/api";
+import { getSchema, getEvals, uploadCsv, connectDatabase } from "@/lib/api";
 
 export default function Connections() {
   const [schema, setSchema] = useState<any>(null);
@@ -22,6 +23,26 @@ export default function Connections() {
   const [uploaded, setUploaded] = useState<any>(null);
   const [uploadErr, setUploadErr] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const [dsn, setDsn] = useState("");
+  const [connName, setConnName] = useState("");
+  const [connecting, setConnecting] = useState(false);
+  const [connResult, setConnResult] = useState<any>(null);
+  const [connErr, setConnErr] = useState<string | null>(null);
+
+  const connect = async () => {
+    if (!dsn.trim() || connecting) return;
+    setConnecting(true);
+    setConnErr(null);
+    setConnResult(null);
+    try {
+      const res = await connectDatabase(connName.trim() || "External database", dsn.trim());
+      setConnResult(res);
+    } catch (e: any) {
+      setConnErr(e.message || "connection failed");
+    } finally {
+      setConnecting(false);
+    }
+  };
 
   useEffect(() => {
     getSchema().then(setSchema).catch(() => {});
@@ -118,6 +139,57 @@ export default function Connections() {
               Ask questions about it in the workspace
               <ArrowRight className="h-4 w-4" />
             </Link>
+          </motion.div>
+        )}
+      </div>
+
+      {/* Connect an external database */}
+      <div className="mt-4 card p-5">
+        <h2 className="flex items-center gap-2 text-lg font-medium">
+          <Plug className="h-5 w-5 text-indigo" /> Connect a database
+        </h2>
+        <p className="mt-1 text-sm text-ink-dim">
+          Point Nexus at a <b>read-only</b> Postgres, MySQL, or BigQuery connection.
+          The DSN is SSRF-screened, verified read-only, and encrypted at rest — then
+          questions run against it with the same five-layer safety guard.
+        </p>
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+          <input
+            value={connName}
+            onChange={(e) => setConnName(e.target.value)}
+            placeholder="Name (e.g. Prod warehouse)"
+            className="focus-ring rounded-lg border border-line bg-surface/60 px-3 py-2 text-sm sm:w-56"
+          />
+          <input
+            value={dsn}
+            onChange={(e) => setDsn(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && connect()}
+            placeholder="postgresql://ro_user:••••@host:5432/db  ·  mysql://…  ·  bigquery://project/dataset"
+            className="focus-ring flex-1 rounded-lg border border-line bg-surface/60 px-3 py-2 font-mono text-xs"
+          />
+          <button
+            onClick={connect}
+            disabled={connecting}
+            className="focus-ring flex shrink-0 items-center justify-center gap-1.5 rounded-lg bg-ai-gradient px-4 py-2 text-sm font-medium text-white disabled:opacity-50"
+          >
+            {connecting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plug className="h-4 w-4" />}
+            {connecting ? "Verifying…" : "Connect"}
+          </button>
+        </div>
+        {connErr && <p className="mt-3 text-sm text-neg">Rejected: {connErr}</p>}
+        {connResult && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="mt-4 rounded-xl border border-pos/25 bg-pos/5 p-4 text-sm"
+          >
+            <p>
+              <b>{connResult.name}</b> connected · {connResult.db_kind} ·{" "}
+              <span className="text-pos">{connResult.verification}</span>
+            </p>
+            <p className="mt-1 text-xs text-ink-faint">
+              Select it in the workspace connection picker to start asking questions.
+            </p>
           </motion.div>
         )}
       </div>

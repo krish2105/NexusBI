@@ -108,6 +108,17 @@ export async function getConnections() {
   return (await r.json()).connections as any[];
 }
 
+export async function connectDatabase(name: string, targetUrl: string) {
+  const r = await fetch(`${BASE}/connections`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name, target_url: targetUrl, read_only_confirmed: true }),
+  });
+  const body = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(body.detail || "connection failed");
+  return body;
+}
+
 export async function uploadCsv(files: FileList | File[], name: string) {
   const fd = new FormData();
   Array.from(files).forEach((f) => fd.append("files", f));
